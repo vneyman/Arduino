@@ -1,7 +1,7 @@
 #include "LowPower.h"
 
 const int _pinLed = 9;
-const unsigned long _minLedOnTime = 5000; // 1 minute = 60000
+const unsigned long _minLedOnTime = 1000; // 1 minute = 60000
 
 const int _pinPir = 2;
 int _pirValue = 0, _pirState = LOW;
@@ -33,19 +33,21 @@ void loop(){
 
 void turnOnLed(){
   unsigned long startTime = millis(), startMinLedOnTime;
-  unsigned int minTimeBeforeAction = 4000;
+  unsigned int minTimeBeforeAction = 8000;
   
   while(digitalRead(_pinPir) == HIGH){
+    //Serial.println(_pirState);
     if(_pirState == LOW){
       digitalWrite(_pinLed, HIGH);
+      delay(1);
       _pirState = HIGH;
       }
-
+    
     if(millis() - startTime > minTimeBeforeAction){
       ledAction();
       }
     }
-
+  
   startMinLedOnTime = millis();
   
   while(millis() - startMinLedOnTime <= _minLedOnTime){

@@ -2,11 +2,11 @@
 const int pinGrd = 5, pinVcc = 4;
 
 //Infrared sensor module (obstacle avoidance)
-const int pinObstacle = 6;
+const int pinObstacle = 2;
 int isObstacle = HIGH;
 
 //LED Pin
-const int pinLed = 13;
+const int pinLed = 9;
 
 void setup(){
   pinMode(pinVcc, OUTPUT);
@@ -21,7 +21,7 @@ void setup(){
 void loop(){
   isObstacle = digitalRead(pinObstacle);
   
-  if(isObstacle){
+  if(isObstacle == LOW){
     digitalWrite(pinLed, HIGH);
     delay(1000);
   }else{

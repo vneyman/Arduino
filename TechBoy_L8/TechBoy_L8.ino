@@ -16,10 +16,10 @@ String blinkCountMessage = "  Blink count: ";
 
 int voltsToAnalog(float volts){
   if(volts>5.0) { volts = 5.0;}
-  char buffer[10];
+  char bufferVolts[10];
   int writeValue = (int)(round(volts*255/5*100)/100);
   
-  String voltsStr = dtostrf(volts,5,2,buffer);
+  String voltsStr = dtostrf(volts,5,2,bufferVolts);
   String mess = voltsStr + " Volts = " + writeValue + " analog";
   Serial.println(mess);
   

@@ -1,7 +1,7 @@
 int redPin = 9;
 int yellowPin = 10;
 
-int potPin = 5;
+int potPin = A5;
 int potValue = 0;
 const float maxVolts = 5.0;
 
@@ -43,7 +43,7 @@ void blinkPins(int pin1, int pin2, int inputValue){
 
 void setup() {
   // put your setup code here, to run once:
-  Serial.begin(9600);
+  Serial.begin(115200);
   
   pinMode(redPin, OUTPUT);
   pinMode(yellowPin, OUTPUT);

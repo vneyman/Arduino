@@ -90,7 +90,7 @@ void testOneByOne(int showAll){
     
     delay(250);
     
-    if(showAll==1){
+    if(showAll==0){
       leds[i] = CRGB::Black;
     }
   }

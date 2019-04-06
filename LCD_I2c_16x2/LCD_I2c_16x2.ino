@@ -42,7 +42,9 @@
 // initialize the library with the numbers of the interface pins
 LiquidCrystal_I2C lcd(0x3F, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE);
 
-const int lcdRowLength = 16;
+const int _lcdColumns = 16, _lcdRows = 2;
+String _blankChar = " ";
+
 const char* message[] = {"Ready", "Set", "GO!!"};
 const int sizeOfMessage = sizeof(message)/sizeof(char *);
 
@@ -50,19 +52,19 @@ void setup() {
   Serial.begin(9600);
   
   // set up the LCD's number of columns and rows: 
-  lcd.begin(lcdRowLength, 2);
+  lcd.begin(_lcdColumns, _lcdRows);
   // Print a message to the LCD.
   lcd.print("hello, world!");
   delay(2000);
   
   int startCursor = 0;
-  String blank = repeatString(" ", lcdRowLength);
+  String blank = repeatString(&_blankChar, &_lcdColumns);
   
   for(int i=0; i<sizeOfMessage; i++){    
     lcd.setCursor(0,0);
     lcd.print(blank);
     
-    startCursor = lcdRowLength/2 - (int)(String(message[i]).length()/2)-1;
+    startCursor = _lcdColumns/2 - (int)(String(message[i]).length()/2)-1;
 
     lcd.setCursor(startCursor,0);
     lcd.print(message[i]);
@@ -83,7 +85,7 @@ void loop() {
 void lcdUpdate(uint8_t charStart, uint8_t line, String value){
   int valueLength = value.length();
   //int count = 0;
-  String blank = repeatString(" ", valueLength);
+  String blank = repeatString(&_blankChar, &valueLength);
   
   lcd.setCursor(charStart, line);
   lcd.print(blank);
@@ -91,14 +93,14 @@ void lcdUpdate(uint8_t charStart, uint8_t line, String value){
   lcd.print(value);
 }
 
-String repeatString(String charToRepeat, int repeat){
+String repeatString(String * charToRepeat, int * repeat){
   String stringValue = "";
   int count = 1;
   
   do{
-    stringValue += charToRepeat;
+    stringValue += *charToRepeat;
     count++;
-  }while(count<repeat);
+  }while(count < *repeat);
   
   return stringValue;
 }

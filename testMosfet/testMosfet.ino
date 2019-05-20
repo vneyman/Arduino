@@ -23,7 +23,7 @@
 #define IS_TEST
 #define ARRAY_SIZE(A) (sizeof(A) / sizeof((A)[0]))
 
-const unsigned int _pinMosfet = 8;
+const unsigned int _pinMosfet = 9;
 
 void setup() {
   // put your setup code here, to run once:

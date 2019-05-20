@@ -41,7 +41,7 @@ const uint8_t SPEED_DEADBAND = 5; // in analog units
 
 // Global variables
 uint8_t  curString = 0;
-char *msg[] = {"Olivia", "Sampson", "Silvia", "Val"};
+char *msg[] = {"Vivian", "Happy", "B-Day", "Vivian", "Love U"};
 
 // Sprite Definition
 const uint8_t F_ROCKET = 2;

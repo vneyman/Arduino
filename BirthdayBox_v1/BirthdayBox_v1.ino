@@ -2,6 +2,7 @@
 #include "pitches.h"
 #include "StarWarsPitches.h"
 #include "HappyBirthday.h"
+#include "SuperMario.h"
 
 
 // Turn on debug statements to the serial output
@@ -34,19 +35,12 @@ const float _tempPerfect = 70., _tempMax = 80., _tempMin = 60.;
 int _pinLedRgb[] = {5, 6, 9};      // the number of the LED pin
 const float _maxBrightness = 220; //max brightness of each RGB color
 
-typedef void (*songArray[])();
-//songArray songs = {playStarWars, playHappyBirthday, playSpaceGun};
-songArray songs = {};
-unsigned int songsCount = ARRAY_SIZE(songs);
-
 // the following variables are long's because the time, measured in miliseconds,
 // will quickly become a bigger number than can be stored in an int.
 unsigned long lastDebounceTime = 0;  // the last time the output pin was toggled
 unsigned long debounceDelay = 50;    // the debounce time; increase if the output flickers
 
 void setup() {
-  songs[0] = playStarWars; songs[1] = playHappyBirthday; songs[2] = playSpaceGun;
-  
   #if DEBUG_ENABLE
     Serial.begin(115200);
     DEBUGS("[Birthay Box test]");
@@ -113,9 +107,7 @@ void readTuneButton(){
     
   }else if(_pinSongValue > 100){
     setLedRgbColors(rgbOrange);
-    
-    //playHappyBirthday();
-    songs[random(0, songsCount)]();
+    playRandomSong(0, 4);
   }else{
     //setLedRgbOff();
     noTone(_pinSpeaker);
@@ -193,9 +185,93 @@ void setLedRgbOff()
   }
 }
 
+void playRandomSong(int startIndex, int endIndex){
+    static unsigned int randomSongPrevious;
+    
+    typedef void (*songArray[])();
+    songArray songs = {playStarWars, playHappyBirthday, playSpaceGun, playSuperMario};
+    unsigned int songsCount = ARRAY_SIZE(songs);
+
+    //make sure that startIndex and endIndex do not exceed array size
+    if(startIndex > songsCount){
+      startIndex = songsCount;
+      }
+
+    if(endIndex > songsCount){
+      endIndex = songsCount;
+      }
+
+    unsigned int randomSong = random(startIndex, endIndex);
+
+    while(randomSong == randomSongPrevious){
+      randomSong = random(startIndex, endIndex);
+      }
+
+    songs[randomSong]();
+    randomSongPrevious = randomSong;
+  }
+
 void soundRandom(int maximum){
   tone(_pinSpeaker, random(maximum, 10*maximum));
   delay(maximum);
+}
+
+void playSuperMario(){
+    playSuperMarioTheme(1);
+    playSuperMarioTheme(1);
+    playSuperMarioTheme(2);
+  }
+
+void playSuperMarioTheme(int theme) {
+  // iterate over the notes of the melody:
+  //song = s;
+  if (theme == 2) {
+    Serial.println(" 'Underworld Theme'");
+    //int size = sizeof(underworld_melody) / sizeof(int);
+    int melodySizeUnderworld = ARRAY_SIZE(superMarioUnderworldMelody);
+    
+    for (int thisNote = 0; thisNote < melodySizeUnderworld; thisNote++) {
+
+      // to calculate the note duration, take one second
+      // divided by the note type.
+      //e.g. quarter note = 1000 / 4, eighth note = 1000/8, etc.
+      int noteDuration = 1000 / superMarioUnderworldTempo[thisNote];
+
+      beepDigitalWriteSuperMario(_pinSpeaker, superMarioUnderworldMelody[thisNote], noteDuration);
+
+      // to distinguish the notes, set a minimum time between them.
+      // the note's duration + 30% seems to work well:
+      int pauseBetweenNotes = noteDuration * 1.30;
+      delay(pauseBetweenNotes);
+
+      // stop the tone playing:
+      beepDigitalWriteSuperMario(_pinSpeaker, 0, noteDuration);
+    }
+
+  } else {
+
+    Serial.println(" 'Mario Theme'");
+    //int size = sizeof(melody) / sizeof(int);
+    int melodySize = ARRAY_SIZE(superMarioMelody);
+    
+    for (int thisNote = 0; thisNote < melodySize; thisNote++) {
+
+      // to calculate the note duration, take one second
+      // divided by the note type.
+      //e.g. quarter note = 1000 / 4, eighth note = 1000/8, etc.
+      int noteDuration = 1000 / superMarioTempo[thisNote];
+
+      beepDigitalWriteSuperMario(_pinSpeaker, superMarioMelody[thisNote], noteDuration);
+
+      // to distinguish the notes, set a minimum time between them.
+      // the note's duration + 30% seems to work well:
+      int pauseBetweenNotes = noteDuration * 1.30;
+      delay(pauseBetweenNotes);
+
+      // stop the tone playing:
+      beepDigitalWriteSuperMario(_pinSpeaker, 0, noteDuration);
+    }
+  }
 }
 
 void soundSpaceGun(int maximum){  
@@ -316,6 +392,15 @@ void beep(int note, int duration)
   delay(50);
 }
 
+void beepDigitalWrite_NOTUSED(int tone1, int duration, int tone1Multiplier) {
+  for(long i = 0; i < duration; i += tone1 * tone1Multiplier) {
+     digitalWrite(_pinSpeaker, HIGH);
+     delayMicroseconds(tone1);
+     digitalWrite(_pinSpeaker, LOW);
+     delayMicroseconds(tone1);
+  }
+}
+
 void beepDigitalWrite(int tone1, int duration) {
   for(long i = 0; i < duration * 1000L; i += tone1 * 2) {
      digitalWrite(_pinSpeaker, HIGH);
@@ -323,4 +408,32 @@ void beepDigitalWrite(int tone1, int duration) {
      digitalWrite(_pinSpeaker, LOW);
      delayMicroseconds(tone1);
   }
+}
+
+void beepDigitalWriteSuperMario_NOT_USED(int targetPin, long frequency, long length) {
+  long delayValue = 1000000 / frequency / 2; // calculate the delay value between transitions
+  //// 1 second's worth of microseconds, divided by the frequency, then split in half since
+  //// there are two phases to each cycle
+  long numCycles = frequency * length / 1000; // calculate the number of cycles for proper timing
+  //// multiply frequency, which is really cycles per second, by the number of seconds to
+  //// get the total number of cycles to produce
+  //beepDigitalWrite(1, numCycles, 1);
+}
+
+void beepDigitalWriteSuperMario(int targetPin, long frequency, long length) {
+  digitalWrite(13, HIGH);
+  long delayValue = 1000000 / frequency / 2; // calculate the delay value between transitions
+  //// 1 second's worth of microseconds, divided by the frequency, then split in half since
+  //// there are two phases to each cycle
+  long numCycles = frequency * length / 1000; // calculate the number of cycles for proper timing
+  //// multiply frequency, which is really cycles per second, by the number of seconds to
+  //// get the total number of cycles to produce
+  for (long i = 0; i < numCycles; i++) { // for the calculated length of time...
+    digitalWrite(targetPin, HIGH); // write the buzzer pin high to push out the diaphram
+    delayMicroseconds(delayValue); // wait for the calculated delay value
+    digitalWrite(targetPin, LOW); // write the buzzer pin low to pull back the diaphram
+    delayMicroseconds(delayValue); // wait again or the calculated delay value
+  }
+  digitalWrite(13, LOW);
+
 }

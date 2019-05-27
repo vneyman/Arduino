@@ -3,7 +3,6 @@ const int pinTmp=A0;
 const unsigned int tmpUpdateDelay = 1000;
 unsigned long tmpLastUpdate;
 float tempC, tempF, tempCadjust = -1.0;
-const int tempShowCount = 3;
 
 void setup(){
   Serial.begin(9600);

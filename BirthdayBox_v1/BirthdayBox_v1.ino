@@ -35,7 +35,8 @@ int _pinLedRgb[] = {5, 6, 9};      // the number of the LED pin
 const float _maxBrightness = 220; //max brightness of each RGB color
 
 typedef void (*songArray[])();
-songArray songs = {playStarWars, playHappyBirthday, playSpaceGun};
+//songArray songs = {playStarWars, playHappyBirthday, playSpaceGun};
+songArray songs = {};
 unsigned int songsCount = ARRAY_SIZE(songs);
 
 // the following variables are long's because the time, measured in miliseconds,
@@ -44,6 +45,8 @@ unsigned long lastDebounceTime = 0;  // the last time the output pin was toggled
 unsigned long debounceDelay = 50;    // the debounce time; increase if the output flickers
 
 void setup() {
+  songs[0] = playStarWars; songs[1] = playHappyBirthday; songs[2] = playSpaceGun;
+  
   #if DEBUG_ENABLE
     Serial.begin(115200);
     DEBUGS("[Birthay Box test]");

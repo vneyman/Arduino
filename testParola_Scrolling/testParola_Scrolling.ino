@@ -69,12 +69,12 @@ uint16_t scrollPause = 2000; // in milliseconds
 #define	BUF_SIZE	75
 char curMessage[BUF_SIZE] = { "" };
 char curMessageRunTime[BUF_SIZE] = { "" };
-char newMessage[BUF_SIZE] = { "I love Silvia, Olivia, & Sampson" };
+char newMessage[BUF_SIZE] = { "See you soon. I love dad!" };
 bool newMessageAvailable = true;
 
 //Runtime variables
 unsigned long _runTimeLastUpdate;
-const unsigned int _runTimeUpdateDelay = 10000;
+const unsigned int _runTimeUpdateDelay = 30000;
 
 #if USE_UI_CONTROL
 
@@ -205,7 +205,8 @@ void runTime(){
     if(minutes<10){ strMinutes = String("0" + strMinutes); }
     if(seconds<10){ strSeconds = String("0" + strSeconds); }
 
-    String("Run time: " + strHours + ":" + strMinutes + ":" + strSeconds).toCharArray(curMessageRunTime, BUF_SIZE);
+    //String("Run time: " + strHours + ":" + strMinutes + ":" + strSeconds).toCharArray(curMessageRunTime, BUF_SIZE);
+    String("RT: " + strHours + ":" + strMinutes).toCharArray(curMessageRunTime, BUF_SIZE);
 
     strcpy(curMessage, curMessageRunTime);      
 }

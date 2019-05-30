@@ -41,9 +41,11 @@ void setTone(int pin, int note, int duration) {
   tone(pin, note, duration);
   delay(duration);
   noTone(pin);
+  delay(50);
 }
 
 void loop() {
+  digitalWrite(led_pin, HIGH);
   setTone(buzzer_pin, Music.B, tempo * Length.one);
   setTone(buzzer_pin, Music.E, tempo * Length.one_half);
   setTone(buzzer_pin, Music.G, tempo * Length.half);
@@ -59,5 +61,6 @@ void loop() {
   setTone(buzzer_pin, Music.Ds, tempo * Length.two);
   setTone(buzzer_pin, Music.F, tempo * Length.one);
   setTone(buzzer_pin, Music.B, tempo * Length.two_half);
-  delay(500000);
+  digitalWrite(led_pin, LOW);
+  delay(2000);
 }

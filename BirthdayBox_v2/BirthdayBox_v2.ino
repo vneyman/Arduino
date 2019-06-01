@@ -40,7 +40,7 @@ const float _tempPerfect = 70., _tempMax = 80., _tempMin = 60.;
 //RGB LEDs
 int _pinLedRgb[] = {5, 6, 9};      // the number of the LED pin
 unsigned int _pinCountLedRgb = ARRAY_SIZE(_pinLedRgb);
-const float _maxBrightnessLedRgb = 220; //max brightness of each RGB color
+const int _maxBrightnessLedRgb = 220; //max brightness of each RGB color
 
 // the following variables are long's because the time, measured in miliseconds,
 // will quickly become a bigger number than can be stored in an int.
@@ -65,7 +65,7 @@ void setup() {
   playStartupTones();
 
   #if DEBUG_ENABLE
-    int rgb[] = {_maxBrightnessLedRgb, 0, 0};
+    int rgb[] = {_maxBrightnessLedRgb, 0, 0}; //red
     
     setLedRgbColors(rgb); delay(500);
     rgb[0] = 0; rgb[1] = _maxBrightnessLedRgb;
@@ -97,17 +97,16 @@ void readTuneButton(){
   int rgbPurple[] = {148, 0, _maxBrightnessLedRgb};
   int rgbYellow[] = {150, 200, 0};
   int rgbOrange[] = {200, 153, 50};
-  
+
+  //soundSpaceGun(random(300, 800));
+    //soundFibonacci(random(30, 50));
+    //soundRandom(400);
+    
   if(_pinSongValue > 900){
     setLedRgbColors(rgbPurple);
-    soundRandom(400);
+    playRandomSong(0, 6);
     
-  }else if(_pinSongValue > 400){
-    setLedRgbColors(rgbYellow);
-    soundSpaceGun(random(300, 800));
-    //soundFibonacci(random(30, 50));
-    
-  }else if(_pinSongValue > 100){
+  }else if(_pinSongValue > 300){
     setLedRgbColors(rgbOrange);
     playRandomSong(0, 6);
   }else{
@@ -117,16 +116,15 @@ void readTuneButton(){
 }
 
 void tmp36Sensor(){
-  unsigned int tmpReading = analogRead(_pinTmp);
-  float tmp36Voltage = tmpReading * 5.0;
+  int tmp36Reading = analogRead(_pinTmp);
+  float tmp36Voltage = tmp36Reading * 5.0;
   tmp36Voltage /= 1024.0;
   
   _tempC = (tmp36Voltage - .5)*100.0 + _tempCadjust;
   _tempF = (_tempC * 9.0/5.0) + 32.;
   
-  #if DEBUG_ENABLE
-    //DEBUG("\nTemp F: ", _tempF);
-    //delay(500);
+  #if DEBUG_ENABLE    
+    DEBUG("\nTemp F: ", _tempF); delay(250);
   #endif
 }
 
@@ -134,26 +132,34 @@ void setTempColors()
 {  
   tmp36Sensor(); //reads tmp36 and sets _tempF
   
-  static int rgbTempColors[] = {0,(int)_maxBrightnessLedRgb,0};
+  static int rgbTempColors[] = {0, _maxBrightnessLedRgb, 0};
   
   float diff = _tempF - _tempPerfect;
   float adjust;
   
   if(diff > .5){
-    adjust = (diff/(_tempMax - _tempPerfect)) * _maxBrightnessLedRgb;
+    adjust = min((diff/(_tempMax - _tempPerfect)) * _maxBrightnessLedRgb, _maxBrightnessLedRgb);
     rgbTempColors[0] = adjust; //red
     rgbTempColors[1] = _maxBrightnessLedRgb - adjust; //green
     rgbTempColors[2] = 0.; //blue
   }else if(diff < -.5){
-    adjust = diff/(_tempMin - _tempPerfect)*_maxBrightnessLedRgb;
+    adjust = min(diff/(_tempMin - _tempPerfect)*_maxBrightnessLedRgb, _maxBrightnessLedRgb);
     rgbTempColors[2] = adjust; //blue
     rgbTempColors[1] = _maxBrightnessLedRgb - adjust; //green
     rgbTempColors[0] = 0.; //red
   }else{
     rgbTempColors[0] = 0.; //red
-    rgbTempColors[1] = (int)_maxBrightnessLedRgb; //green
+    rgbTempColors[1] = _maxBrightnessLedRgb; //green
     rgbTempColors[2] = 0.; //blue
   }
+
+  #if DEBUG_ENABLE
+    //DEBUG("\nTemp F: ", _tempF); 
+    //DEBUG("\t rgbTempColors[0]: ", rgbTempColors[0]); 
+    //DEBUG("\t rgbTempColors[1]: ", rgbTempColors[1]);
+    //delay(1000);
+  #endif
+
   
   setLedRgbColors(rgbTempColors);
 }
@@ -181,16 +187,19 @@ void setLedRgbOff()
   }
 }
 
+
 void playRandomSong(int startIndex, int endIndex){
     static unsigned int randomSongPrevious;
 
     //separate songs because uses too much dynamic memory when part of a single array
-    songArray songs1 = {playPiratesCaribbean, playStarWars, playSuperMario, playHarryPotter, playHappyBirthday, playSpaceGun};
+    songArray songs1 = {playStarWars, playSuperMario, playHarryPotter, playSpaceGun, playHappyBirthday};
     songArray songs2 = {playSpaceGun}; //playPiratesCaribbean
       
     unsigned int songs1Count = ARRAY_SIZE(songs1);
     unsigned int songs2Count = ARRAY_SIZE(songs2);
     unsigned int songsCount = songs1Count + songs2Count;
+
+    DEBUG("\n songsCount: ", songsCount); delay(1000);
 
     //make sure that startIndex and endIndex do not exceed array size
     if(startIndex > songsCount){
@@ -202,7 +211,7 @@ void playRandomSong(int startIndex, int endIndex){
       }
 
     unsigned int randomSong = random(startIndex, endIndex);
-
+    
     while(randomSong == randomSongPrevious){
       randomSong = random(startIndex, endIndex);
       }
@@ -210,10 +219,10 @@ void playRandomSong(int startIndex, int endIndex){
     if(randomSong < songs1Count){
       songs1[randomSong]();
       }else{
-        songs2[randomSong]();
+        songs2[randomSong - songs1Count]();
         }
     
-    //songs1[randomSong]();
+    songs1[randomSong]();
     randomSongPrevious = randomSong;
   }
 
@@ -232,7 +241,10 @@ void playSuperMarioTheme(int theme) {
   // iterate over the notes of the melody:
   //song = s;
   if (theme == 2) {
-    Serial.println(" 'Underworld Theme'");
+    #if DEBUG_ENABLE
+      DEBUGS("\n'Underworld Theme'");
+    #endif
+    
     //int size = sizeof(underworld_melody) / sizeof(int);
     int melodySizeUnderworld = ARRAY_SIZE(superMarioUnderworldMelody);
     
@@ -255,8 +267,11 @@ void playSuperMarioTheme(int theme) {
     }
 
   } else {
+    
+    #if DEBUG_ENABLE
+      DEBUGS("\n'Mario Theme'");
+    #endif
 
-    Serial.println(" 'Mario Theme'");
     //int size = sizeof(melody) / sizeof(int);
     int melodySize = ARRAY_SIZE(superMarioMelody);
     
@@ -406,7 +421,7 @@ void playHarryPotterMain(){
 
 void playPiratesCaribbean(){  
   int duration = 0;
-  
+
   for(int i = 0; i<ARRAY_SIZE(piratesCaribbeanNotes); i++){
     duration = piratesCaribbeanDuration[i] * piratesCaribbeanTempo;
     beep(piratesCaribbeanNotes[i], duration);

@@ -1,3 +1,7 @@
+#include <MD_Parola.h>
+#include <MD_MAX72xx.h>
+#include <SPI.h>
+
 // include the library code:
 #include "pitches.h"
 #include "StarWarsPitches.h"
@@ -21,11 +25,24 @@
 
 #define ARRAY_SIZE(A) (sizeof(A) / sizeof((A)[0]))
 
+// Define the number of devices we have in the chain and the hardware interface
+// NOTE: These pin numbers will probably not work with your hardware and may
+// need to be adapted
+#define HARDWARE_TYPE MD_MAX72XX::FC16_HW
+#define MAX_DEVICES 4
+#define CLK_PIN   13
+#define DATA_PIN  11
+#define CS_PIN    10
+
+// HARDWARE SPI
+MD_Parola P = MD_Parola(HARDWARE_TYPE, CS_PIN, MAX_DEVICES);
+
 // constants won't change. They're used here to 
 // set pin numbers:
 const int _pinSongButton = A0, _pinSpeaker = 7;    // pins to determine song and speaker used by tone()
-const unsigned long _btnDebounceDelay = 50;    // the debounce time; increase if the output flickers
+const unsigned long _btnDebounceDelay = 100;    // the debounce time; increase if the output flickers
 unsigned long _btnLastDebounceTime = 0;  // the last time the output pin was toggled
+//int randomSongPrevious;
 
 unsigned int _pinSongValue;
 typedef void (*songArray[])(); //object type to store song void functions
@@ -34,8 +51,8 @@ typedef void (*songArray[])(); //object type to store song void functions
 const int _pinTmp = A3;
 const unsigned long _tmpUpdateDelay = 10000; //1000ms* 60 = 60000 for 1 minute
 unsigned long _tmpLastUpdate;
-float _tempC, _tempF, _tempCadjust= 0.0;
-const float _tempPerfect = 70., _tempMax = 80., _tempMin = 60.;
+float _tempC, _tempF, _tempCadjust = 0.0;
+const float _tempF_perfect = 70., _tempF_max = 80., _tempF_min = 60.;
 
 //RGB LEDs
 int _pinLedRgb[] = {5, 6, 9};      // the number of the LED pin
@@ -48,7 +65,7 @@ const int _maxBrightnessLedRgb = 220; //max brightness of each RGB color
 void setup() {
   #if DEBUG_ENABLE
     Serial.begin(115200);
-    DEBUGS("[Birthay Box test]");
+    DEBUGS("\n[Birthday Box test]");
   #endif
   
   pinMode(_pinSongButton, INPUT);
@@ -91,29 +108,60 @@ void readTuneButton(){
   _pinSongValue = analogRead(_pinSongButton);
   
   #if DEBUG_ENABLE
-    DEBUG("\nSong PIN value: ", _pinSongValue);
+    DEBUG("\n Pin Song Value: ", _pinSongValue); 
+    //delay(500);
   #endif
   
   int rgbPurple[] = {148, 0, _maxBrightnessLedRgb};
   int rgbYellow[] = {150, 200, 0};
   int rgbOrange[] = {200, 153, 50};
 
-  //soundSpaceGun(random(300, 800));
-    //soundFibonacci(random(30, 50));
-    //soundRandom(400);
-    
   if(_pinSongValue > 900){
     setLedRgbColors(rgbPurple);
-    playRandomSong(0, 6);
+    //playRandomSong(3, 7);
+    playRandomSong(0);
     
   }else if(_pinSongValue > 300){
     setLedRgbColors(rgbOrange);
-    playRandomSong(0, 6);
+    //playRandomSong(3, 7);
+    playRandomSong(1);
+
   }else{
-    //setLedRgbOff();
     noTone(_pinSpeaker);
   }
 }
+
+void playRandomSong(int songSet){  
+    static int randomSongPrevious;
+
+    //separate songs because uses too much dynamic memory when part of a single array
+    songArray songs1 = {playStarWars, playPiratesCaribbean, playHarryPotter, 
+      playHappyBirthday, playSpaceGun, playFibonacci, playRandomSound}; //playPiratesCaribbean, playSuperMario
+      
+    int songsCount = ARRAY_SIZE(songs1);
+    int startIndex, endIndex;
+    
+    if(songSet > 0){
+      startIndex = 3; endIndex = songsCount;
+      }else{
+        startIndex = 0; endIndex = 3;
+        }
+    
+    int randomSong = random(startIndex, endIndex);
+
+    //DEBUG("\n songsCount: ", songsCount);
+    //DEBUG("\t startIndex: ", startIndex); DEBUG("\t endIndex: ", endIndex);
+    
+    while(randomSong == randomSongPrevious){
+      randomSong = random(startIndex, endIndex);
+      }
+
+    //DEBUG("\n randomSong: ", randomSong); DEBUG("\t randomSongPrevious: ", randomSongPrevious); 
+    //delay(1000);
+    
+    songs1[randomSong]();
+    randomSongPrevious = randomSong;
+  }
 
 void tmp36Sensor(){
   int tmp36Reading = analogRead(_pinTmp);
@@ -124,7 +172,7 @@ void tmp36Sensor(){
   _tempF = (_tempC * 9.0/5.0) + 32.;
   
   #if DEBUG_ENABLE    
-    DEBUG("\nTemp F: ", _tempF); delay(250);
+    //DEBUG("\nTemp F: ", _tempF); delay(250);
   #endif
 }
 
@@ -134,18 +182,18 @@ void setTempColors()
   
   static int rgbTempColors[] = {0, _maxBrightnessLedRgb, 0};
   
-  float diff = _tempF - _tempPerfect;
+  float diff = _tempF - _tempF_perfect;
   float adjust;
   
   if(diff > .5){
-    adjust = min((diff/(_tempMax - _tempPerfect)) * _maxBrightnessLedRgb, _maxBrightnessLedRgb);
+    adjust = min((diff/(_tempF_max - _tempF_perfect)) * _maxBrightnessLedRgb, _maxBrightnessLedRgb);
     rgbTempColors[0] = adjust; //red
-    rgbTempColors[1] = _maxBrightnessLedRgb - adjust; //green
+    rgbTempColors[1] = max(_maxBrightnessLedRgb - adjust, 0); //green
     rgbTempColors[2] = 0.; //blue
   }else if(diff < -.5){
-    adjust = min(diff/(_tempMin - _tempPerfect)*_maxBrightnessLedRgb, _maxBrightnessLedRgb);
+    adjust = min(diff/(_tempF_min - _tempF_perfect)*_maxBrightnessLedRgb, _maxBrightnessLedRgb);
     rgbTempColors[2] = adjust; //blue
-    rgbTempColors[1] = _maxBrightnessLedRgb - adjust; //green
+    rgbTempColors[1] = max(_maxBrightnessLedRgb - adjust, 0); //green
     rgbTempColors[0] = 0.; //red
   }else{
     rgbTempColors[0] = 0.; //red
@@ -160,7 +208,6 @@ void setTempColors()
     //delay(1000);
   #endif
 
-  
   setLedRgbColors(rgbTempColors);
 }
 
@@ -188,48 +235,20 @@ void setLedRgbOff()
 }
 
 
-void playRandomSong(int startIndex, int endIndex){
-    static unsigned int randomSongPrevious;
 
-    //separate songs because uses too much dynamic memory when part of a single array
-    songArray songs1 = {playStarWars, playSuperMario, playHarryPotter, playSpaceGun, playHappyBirthday};
-    songArray songs2 = {playSpaceGun}; //playPiratesCaribbean
-      
-    unsigned int songs1Count = ARRAY_SIZE(songs1);
-    unsigned int songs2Count = ARRAY_SIZE(songs2);
-    unsigned int songsCount = songs1Count + songs2Count;
+void playRandomSound(){
+  #if DEBUG_ENABLE
+      DEBUGS("\n Random Sounds");
+  #endif
 
-    DEBUG("\n songsCount: ", songsCount); delay(1000);
-
-    //make sure that startIndex and endIndex do not exceed array size
-    if(startIndex > songsCount){
-      startIndex = songsCount;
-      }
-
-    if(endIndex > songsCount){
-      endIndex = songsCount;
-      }
-
-    unsigned int randomSong = random(startIndex, endIndex);
-    
-    while(randomSong == randomSongPrevious){
-      randomSong = random(startIndex, endIndex);
-      }
-
-    if(randomSong < songs1Count){
-      songs1[randomSong]();
-      }else{
-        songs2[randomSong - songs1Count]();
-        }
-    
-    songs1[randomSong]();
-    randomSongPrevious = randomSong;
+  int maximum = 100, randomNoteDuration;
+  
+  for(int i = 0; i < 50; i++){
+    randomNoteDuration = random(maximum, 10*maximum);
+    beep(randomNoteDuration, randomNoteDuration);
   }
-
-void soundRandom(int maximum){
-  tone(_pinSpeaker, random(maximum, 10*maximum));
-  delay(maximum);
 }
+
 
 void playSuperMario(){
     playSuperMarioTheme(1);
@@ -237,29 +256,31 @@ void playSuperMario(){
     playSuperMarioTheme(2);
   }
 
+
 void playSuperMarioTheme(int theme) {
+  #if DEBUG_ENABLE
+      DEBUGS("\n Super Mario");
+  #endif
+
+  int noteDuration, pauseBetweenNotes;
   // iterate over the notes of the melody:
   //song = s;
-  if (theme == 2) {
-    #if DEBUG_ENABLE
-      DEBUGS("\n'Underworld Theme'");
-    #endif
+  if (theme == 2) { 
+    //int melodySizeUnderworld = ARRAY_SIZE(superMarioUnderworldMelody);
     
-    //int size = sizeof(underworld_melody) / sizeof(int);
-    int melodySizeUnderworld = ARRAY_SIZE(superMarioUnderworldMelody);
-    
-    for (int thisNote = 0; thisNote < melodySizeUnderworld; thisNote++) {
+    for (int thisNote = 0; thisNote < ARRAY_SIZE(superMarioUnderworldMelody); thisNote++) {
 
       // to calculate the note duration, take one second
       // divided by the note type.
       //e.g. quarter note = 1000 / 4, eighth note = 1000/8, etc.
-      int noteDuration = 1000 / superMarioUnderworldTempo[thisNote];
+      noteDuration = 1000 / superMarioUnderworldTempo[thisNote];
 
       beepDigitalWriteSuperMario(_pinSpeaker, superMarioUnderworldMelody[thisNote], noteDuration);
-
+      //beep(superMarioUnderworldMelody[thisNote], noteDuration);
+      
       // to distinguish the notes, set a minimum time between them.
       // the note's duration + 30% seems to work well:
-      int pauseBetweenNotes = noteDuration * 1.30;
+      pauseBetweenNotes = noteDuration * 1.30;
       delay(pauseBetweenNotes);
 
       // stop the tone playing:
@@ -268,25 +289,18 @@ void playSuperMarioTheme(int theme) {
 
   } else {
     
-    #if DEBUG_ENABLE
-      DEBUGS("\n'Mario Theme'");
-    #endif
-
-    //int size = sizeof(melody) / sizeof(int);
-    int melodySize = ARRAY_SIZE(superMarioMelody);
-    
-    for (int thisNote = 0; thisNote < melodySize; thisNote++) {
+    for (int thisNote = 0; thisNote < ARRAY_SIZE(superMarioMelody); thisNote++) {
 
       // to calculate the note duration, take one second
       // divided by the note type.
       //e.g. quarter note = 1000 / 4, eighth note = 1000/8, etc.
-      int noteDuration = 1000 / superMarioTempo[thisNote];
+      noteDuration = 1000 / superMarioTempo[thisNote];
 
       beepDigitalWriteSuperMario(_pinSpeaker, superMarioMelody[thisNote], noteDuration);
 
       // to distinguish the notes, set a minimum time between them.
       // the note's duration + 30% seems to work well:
-      int pauseBetweenNotes = noteDuration * 1.30;
+      pauseBetweenNotes = noteDuration * 1.30;
       delay(pauseBetweenNotes);
 
       // stop the tone playing:
@@ -295,16 +309,12 @@ void playSuperMarioTheme(int theme) {
   }
 }
 
-void soundSpaceGun(int maximum){  
-  for(int i = 0; i < maximum; i++){
-    digitalWrite(_pinSpeaker, HIGH);
-    delayMicroseconds(i);
-    digitalWrite(_pinSpeaker, LOW);
-    delayMicroseconds(i);
-  }
-}
 
 void playSpaceGun(){  
+  #if DEBUG_ENABLE
+      DEBUGS("\n Space Gun");
+  #endif
+
   unsigned int shotsFired = random(5, 20);
   
   for(int i = 0; i < shotsFired; i++){
@@ -319,11 +329,25 @@ void playSpaceGun(){
   }
 }
 
-void soundFibonacci(int maximum){
+void soundSpaceGun(int maximum){  
+  for(int i = 0; i < maximum; i++){
+    digitalWrite(_pinSpeaker, HIGH);
+    delayMicroseconds(i);
+    digitalWrite(_pinSpeaker, LOW);
+    delayMicroseconds(i);
+  }
+}
+
+void playFibonacci(){
+  #if DEBUG_ENABLE
+      DEBUGS("\n Fibanocci");
+  #endif
+
+  int randomLength = random(20, 30);
   unsigned int fibDelay = 200;
   unsigned long fib = 1, fib1 = 1, fib2 =2;
   
-  for(int i = 0; i < maximum; i++){
+  for(int i = 0; i < randomLength; i++){
     fib = fib1 + fib2;
     fib1 = fib2; fib2 = fib;
     
@@ -332,7 +356,11 @@ void soundFibonacci(int maximum){
   }
 }
 
-void playHappyBirthday(){  
+void playHappyBirthday(){
+  #if DEBUG_ENABLE
+      DEBUGS("\n Happy Birthday");
+  #endif
+  
   for (int i = 0; i < ARRAY_SIZE(happyBirthdayBeats); i++) {
    if (happyBirthdayNotes[i] == ' ') {
      delay(happyBirthdayBeats[i] * happyBirthdayTempo); // rest
@@ -358,6 +386,10 @@ void HappyBirthdayTones(char note, int duration) {
 }
 
 void playStarWars(){
+  #if DEBUG_ENABLE
+      DEBUGS("\n Star Wars");
+  #endif
+  
   playStarWarsFirstSection();
   playStarWarsSecondSection();
 }
@@ -393,6 +425,10 @@ void playStarWarsSecondSection()
 }
 
 void playHarryPotter(){
+  #if DEBUG_ENABLE
+      DEBUGS("\n Harry Potter");
+  #endif
+  
   unsigned int playCount = 3;
   
   for(int i = 0; i<3; i++){
@@ -419,7 +455,11 @@ void playHarryPotterMain(){
   beep(harryPotterNote.B, harryPotterTempo * harryPotterDuration.two_half);
   }
 
-void playPiratesCaribbean(){  
+void playPiratesCaribbean(){
+  #if DEBUG_ENABLE
+      DEBUGS("\n Pirates Caribbean");
+  #endif
+  
   int duration = 0;
 
   for(int i = 0; i<ARRAY_SIZE(piratesCaribbeanNotes); i++){
@@ -445,7 +485,6 @@ void beep(int note, int duration)
   tone(_pinSpeaker, note, duration);
   delay(duration);
   noTone(_pinSpeaker);
-  //delay(50);
 }
 
 void beepDigitalWrite_NOTUSED(int tone1, int duration, int tone1Multiplier) {
@@ -466,6 +505,7 @@ void beepDigitalWrite(int tone1, int duration) {
   }
 }
 
+
 void beepDigitalWriteSuperMario_NOT_USED(int targetPin, long frequency, long length) {
   long delayValue = 1000000 / frequency / 2; // calculate the delay value between transitions
   //// 1 second's worth of microseconds, divided by the frequency, then split in half since
@@ -477,11 +517,13 @@ void beepDigitalWriteSuperMario_NOT_USED(int targetPin, long frequency, long len
 }
 
 void beepDigitalWriteSuperMario(int targetPin, long frequency, long length) {
-  digitalWrite(13, HIGH);
+  //digitalWrite(13, HIGH);
   long delayValue = 1000000 / frequency / 2; // calculate the delay value between transitions
+
   //// 1 second's worth of microseconds, divided by the frequency, then split in half since
   //// there are two phases to each cycle
   long numCycles = frequency * length / 1000; // calculate the number of cycles for proper timing
+  
   //// multiply frequency, which is really cycles per second, by the number of seconds to
   //// get the total number of cycles to produce
   for (long i = 0; i < numCycles; i++) { // for the calculated length of time...
@@ -490,6 +532,6 @@ void beepDigitalWriteSuperMario(int targetPin, long frequency, long length) {
     digitalWrite(targetPin, LOW); // write the buzzer pin low to pull back the diaphram
     delayMicroseconds(delayValue); // wait again or the calculated delay value
   }
-  digitalWrite(13, LOW);
+  //digitalWrite(13, LOW);
 
 }

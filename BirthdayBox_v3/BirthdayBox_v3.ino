@@ -41,7 +41,6 @@ MD_Parola P = MD_Parola(HARDWARE_TYPE, CS_PIN, MAX_DEVICES);
 const int _pinSongButton = A0, _pinSpeaker = 7;    // pins to determine song and speaker used by tone()
 const unsigned long _btnDebounceDelay = 100;    // the debounce time; increase if the output flickers
 unsigned long _btnLastDebounceTime = 0;  // the last time the output pin was toggled
-//int randomSongPrevious;
 
 unsigned int _pinSongValue;
 typedef void (*songArray[])(); //object type to store song void functions

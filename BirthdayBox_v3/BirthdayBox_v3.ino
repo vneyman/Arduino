@@ -33,9 +33,28 @@
 #define DATA_PIN  11
 #define CS_PIN    10
 
-// HARDWARE SPI
+// MAX7219 LED MATRIX: HARDWARE SPI
 MD_Parola P = MD_Parola(HARDWARE_TYPE, CS_PIN, MAX_DEVICES);
 
+// Scrolling parameters
+uint8_t scrollSpeed = 35;    // default frame delay value
+textEffect_t scrollEffect = PA_SCROLL_LEFT;
+textPosition_t scrollAlign = PA_LEFT;
+uint16_t scrollPause = 2000; // in milliseconds
+
+// Global message buffers shared by Serial and Scrolling functions
+#define  BUF_SIZE  75
+char curMessage[BUF_SIZE] = { "" };
+char curMessageRunTime[BUF_SIZE] = { "" };
+char newMessage[BUF_SIZE] = { "See you soon. I love dad!" };
+bool newMessageAvailable = true;
+
+const unsigned long _ledMatrixUpdateDelay = 10000; //1000ms* 60 = 60000 for 1 minute
+unsigned long _ledMatrixLastUpdate;
+
+char *message[] = {"Hello!", "Love u!", "Happy", "B-Day", "Vivian", 
+  "Neyman", "2019", "Olivia", "Sampson", "Silvia", "Val"};
+  
 // constants won't change. They're used here to 
 // set pin numbers:
 const int _pinSongButton = A0, _pinSpeaker = 7;    // pins to determine song and speaker used by tone()
@@ -83,14 +102,24 @@ void setup() {
     int rgb[] = {_maxBrightnessLedRgb, 0, 0}; //red
     
     setLedRgbColors(rgb); delay(500);
-    rgb[0] = 0; rgb[1] = _maxBrightnessLedRgb;
+    rgb[0] = 0; rgb[1] = _maxBrightnessLedRgb; //green
     setLedRgbColors(rgb); delay(500);
-    rgb[1] = 0; rgb[2] = _maxBrightnessLedRgb;
+    rgb[1] = 0; rgb[2] = _maxBrightnessLedRgb; //blue
     setLedRgbColors(rgb); delay(500);
   #endif
+
+  P.begin();
+  //P.displayText(curMessage, scrollAlign, scrollSpeed, scrollPause, scrollEffect, scrollEffect);
+  
+  P.displayText(message[0], PA_CENTER, 0, 0, PA_PRINT, PA_NO_EFFECT);
 }
 
 void loop() {
+  if ((millis() - _ledMatrixLastUpdate) > _ledMatrixUpdateDelay || _ledMatrixLastUpdate > millis()) {
+    setLedMatrixDisplay();
+    _ledMatrixLastUpdate = millis();
+  }
+  
   if ((millis() - _btnLastDebounceTime) > _btnDebounceDelay || _btnLastDebounceTime > millis()) {
     readTuneButton();
     _btnLastDebounceTime = millis();
@@ -101,6 +130,12 @@ void loop() {
     _tmpLastUpdate = millis();
   }
 }
+
+void setLedMatrixDisplay(){
+  int msgInt = random(0, ARRAY_SIZE(message));
+  P.setTextBuffer(message[msgInt]);
+  P.displayReset();
+  }
 
 void readTuneButton(){
   _pinSongValue = analogRead(_pinSongButton);
@@ -403,8 +438,8 @@ void tmp36Sensor(){
   _tempC = (tmp36Voltage - .5)*100.0 + _tempCadjust;
   _tempF = (_tempC * 9.0/5.0) + 32.;
   
-  #if DEBUG_ENABLE    
-    //DEBUG("\nTemp F: ", _tempF); delay(250);
+  #if DEBUG_ENABLE
+    DEBUG("\nTemp F: ", _tempF); delay(250);
   #endif
 }
 

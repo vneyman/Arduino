@@ -46,38 +46,25 @@
 // devices with all constructor calls is here: https://github.com/olikraus/u8glib/wiki/device
 
 U8GLIB_PCD8544 u8g(13, 11, 10, 9, 8);    // SPI Com: SCK = 13, MOSI = 11, CS = 10, A0 = 9, Reset = 8
-
-void draw(void) {
-  // graphic commands to redraw the complete screen should be placed here  
-  u8g.setFont(u8g_font_5x7);
-  //u8g.setFont(u8g_font_osb21);
-  u8g.drawStr( 0, 22, "Hello World!");
-}
+unsigned int counterInt = 0;
+char counterChar[10];
 
 void setup(void) {
-  // flip screen, if required
-  // u8g.setRot180();
-  
-  // set SPI backup if required
-  //u8g.setHardwareBackup(u8g_backup_avr_spi);
-
   Serial.begin(115200);
   Serial.println("starting test of Nokia 5110");
-  
-  // assign default color value
-  if ( u8g.getMode() == U8G_MODE_R3G3B2 ) {
-    u8g.setColorIndex(255);     // white
-  }
-  else if ( u8g.getMode() == U8G_MODE_GRAY2BIT ) {
-    u8g.setColorIndex(3);         // max intensity
-  }
-  else if ( u8g.getMode() == U8G_MODE_BW ) {
-    u8g.setColorIndex(1);         // pixel on
-  }
-  else if ( u8g.getMode() == U8G_MODE_HICOLOR ) {
-    u8g.setHiColorByRGB(255,255,255);
-  }
 
+  //set font
+  //u8g.setFont(u8g_font_profont12);
+  //u8g.setFont(u8g_font_4x6);
+  u8g.setFont(u8g_font_5x7);
+  //u8g.setFont(u8g_font_5x8);
+  //u8g.setFont(u8g_font_6x10);
+  
+  // flip screen, if required
+  //u8g.setRot180();
+  //u8g.setRot90();
+  //u8g.setRot270();
+  
   Serial.print(F("getMode():\t")); Serial.println(u8g.getMode());
   //pinMode(8, OUTPUT);
 }
@@ -86,9 +73,30 @@ void loop(void) {
   // picture loop
   u8g.firstPage();  
   do {
+    counter();
     draw();
   } while( u8g.nextPage() );
   
   // rebuild the picture after some delay
   delay(50);
 }
+
+void draw(void) {
+  // graphic commands to redraw the complete screen should be placed here  
+  
+  u8g.drawStr( 0, 7, "Hello World!"); //(x,y) => (column,row)
+  u8g.drawRFrame(0, 12, 84, 20, 3); //(x,y,width, height, radius of edge)
+  u8g.drawStr( 3, 24, "Val's Nokia 5110"); //locations is x,y
+  
+  u8g.drawCircle(70, 36, 12, U8G_DRAW_ALL); //(x,y,radius, option)
+  u8g.setPrintPos(65, 40); //x,y
+  u8g.print(counterInt);
+}
+
+void counter(){
+  counterInt++;
+
+  if(counterInt > 300){
+      counterInt = 0;
+    }
+  }

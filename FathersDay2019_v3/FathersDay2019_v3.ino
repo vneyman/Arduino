@@ -126,7 +126,7 @@ void onSoundDetected(int * peakValue){
     setLedRgbColors(rgbPurple);
     playSong(1);
     
-  }else if(*peakValue > 15){
+  }else if(*peakValue > 30){
     setLedRgbColors(rgbYellow);
     playSong(0);
     
@@ -149,36 +149,36 @@ void playSong(int songSet){
     _isSongPlayStatus = 0;
 }
 
-void setLedRgbRandom()
+void setLedRgbRandomOLD()
 {
   #if DEBUG_ENABLE
       DEBUGS("\n Random RGB");
   #endif
   
-  int rgb[] = {random(0, _maxBrightnessLedRgb), 
-                  random(0, _maxBrightnessLedRgb), 
-                  random(0, _maxBrightnessLedRgb) };
+  int rgb[] = {random(_maxBrightnessLedRgb), 
+                  random(_maxBrightnessLedRgb), 
+                  random(_maxBrightnessLedRgb) };
     
   for(int i=0; i<_pinCountLedRgb; i++){
     setLedRgbColor(&_pinLedRgb[i], &rgb[i]);
   }
 }
 
-void setLedRgbRandomNew()
+void setLedRgbRandom()
 {
   #if DEBUG_ENABLE
       DEBUGS("\n Random RGB");
   #endif
 
   static int count_rgb_change = 1;
-  static int rgb_index = random(0, 2);
+  static int rgb_index = 0;
   
   static int rgb[] = {random(0, _maxBrightnessLedRgb), 
                   random(0, _maxBrightnessLedRgb), 
                   random(0, _maxBrightnessLedRgb) };
 
   if(count_rgb_change > _rgb_index_count_change){
-      rgb_index = random(0, 2);
+      rgb_index = random(0, _pinCountLedRgb - 1);
     }
 
   rgb[rgb_index] = rgb[rgb_index] + 20;
@@ -203,7 +203,7 @@ void playRandomSound(){
     randomNoteDuration = random(maximum, 10*maximum);
     beep(randomNoteDuration, randomNoteDuration);
     
-    if(!isSongPlayOn()){ break; }
+    if(!isSongPlayOn()){ return; }
   }
 }
 
@@ -213,8 +213,8 @@ void playFibonacci(){
   #endif
 
   int randomLength = random(20, 100);
-  unsigned int randomDelay = random(100, 300);
-  unsigned long fib = 1, fib1 = 1, fib2 = 2;
+  unsigned long randomDelay = random(100., 300.);
+  unsigned int fib = 1, fib1 = 1, fib2 = 2;
   
   for(int i = 0; i < randomLength; i++){
     fib = fib1 + fib2;
@@ -223,7 +223,7 @@ void playFibonacci(){
     tone(_pinSpeaker, fib, randomDelay);
     delay(randomDelay);
     
-    if(!isSongPlayOn()){ break; }
+    if(!isSongPlayOn()){ return; }
   }
 }
 
@@ -279,7 +279,7 @@ void playSuperMarioTheme(int theme) {
       noteDuration = 1000 / superMarioUnderworldTempo[thisNote];
 
       beepDigitalWriteSuperMario(_pinSpeaker, superMarioUnderworldMelody[thisNote], noteDuration);
-      //beep(superMarioUnderworldMelody[thisNote], noteDuration);
+      if(!isSongPlayOn()){ return; }
       
       // to distinguish the notes, set a minimum time between them.
       // the note's duration + 30% seems to work well:
@@ -289,7 +289,7 @@ void playSuperMarioTheme(int theme) {
       // stop the tone playing:
       beepDigitalWriteSuperMario(_pinSpeaker, 0, noteDuration);
       
-      if(!isSongPlayOn()){ break; }
+      if(!isSongPlayOn()){ return; }
     }
 
   } else {
@@ -302,7 +302,8 @@ void playSuperMarioTheme(int theme) {
       noteDuration = 1000 / superMarioTempo[thisNote];
 
       beepDigitalWriteSuperMario(_pinSpeaker, superMarioMelody[thisNote], noteDuration);
-
+      if(!isSongPlayOn()){ return; }
+      
       // to distinguish the notes, set a minimum time between them.
       // the note's duration + 30% seems to work well:
       pauseBetweenNotes = noteDuration * 1.30;
@@ -311,7 +312,7 @@ void playSuperMarioTheme(int theme) {
       // stop the tone playing:
       beepDigitalWriteSuperMario(_pinSpeaker, 0, noteDuration);
       
-      if(!isSongPlayOn()){ break; }
+      if(!isSongPlayOn()){ return; }
     }
   }
 }
@@ -363,7 +364,7 @@ void beepDigitalWriteSuperMario(int targetPin, long frequency, long length) {
     digitalWrite(targetPin, LOW); // write the buzzer pin low to pull back the diaphram
     delayMicroseconds(delayValue); // wait again or the calculated delay value
     
-    if(!isSongPlayOn()){ break; }
+    if(!isSongPlayOn()){ return; }
   }
 }
 

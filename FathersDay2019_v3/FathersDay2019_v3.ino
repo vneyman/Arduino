@@ -29,13 +29,13 @@ int _soundValueAnalog;
 bool _isSongPlayStatus = 0;
 typedef void (*songArray[])(); //object type to store song void functions
 
-//RGB LEDs
+//RGB LEDs settings
 int _pinLedRgb[] = {5, 6, 9};      // LED pins
 unsigned int _pinCountLedRgb = ARRAY_SIZE(_pinLedRgb);
 const int _maxBrightnessLedRgb = 220; //max brightness of each RGB color
 const unsigned long _rgbRandomDelayTime = 1000;
 unsigned long _rgbRandomLastUpdate;
-const unsigned int _rgb_index_count_change = 10;
+const unsigned int _rgbIndexCountChange = 10;
 
 // the following variables are long's because the time, measured in miliseconds,
 // will quickly become a bigger number than can be stored in an int.
@@ -118,15 +118,15 @@ void onSoundDetected(int * peakValue){
     setLedRgbColors(rgbPeru);
     playSong(3);
     
-  }else if(*peakValue > 100){
+  }else if(*peakValue > 120){
     setLedRgbColors(rgbOrange);
     playSong(2);
     
-  }else if(*peakValue > 60){
+  }else if(*peakValue > 70){
     setLedRgbColors(rgbPurple);
     playSong(1);
     
-  }else if(*peakValue > 30){
+  }else if(*peakValue > 25){
     setLedRgbColors(rgbYellow);
     playSong(0);
     
@@ -149,47 +149,34 @@ void playSong(int songSet){
     _isSongPlayStatus = 0;
 }
 
-void setLedRgbRandomOLD()
-{
-  #if DEBUG_ENABLE
-      DEBUGS("\n Random RGB");
-  #endif
-  
-  int rgb[] = {random(_maxBrightnessLedRgb), 
-                  random(_maxBrightnessLedRgb), 
-                  random(_maxBrightnessLedRgb) };
-    
-  for(int i=0; i<_pinCountLedRgb; i++){
-    setLedRgbColor(&_pinLedRgb[i], &rgb[i]);
-  }
-}
-
 void setLedRgbRandom()
 {
   #if DEBUG_ENABLE
       DEBUGS("\n Random RGB");
   #endif
 
-  static int count_rgb_change = 1;
-  static int rgb_index = 0;
+  static int rgbChangeCount = 1;
+  static int rgbIndex = 0;
   
   static int rgb[] = {random(0, _maxBrightnessLedRgb), 
                   random(0, _maxBrightnessLedRgb), 
                   random(0, _maxBrightnessLedRgb) };
 
-  if(count_rgb_change > _rgb_index_count_change){
-      rgb_index = random(0, _pinCountLedRgb - 1);
+//change rgb[] index after exceeds count change
+  if(rgbChangeCount > _rgbIndexCountChange){
+      rgbIndex = random(0, _pinCountLedRgb - 1);
     }
 
-  rgb[rgb_index] = rgb[rgb_index] + 20;
+//increase one of the rgb colors by 20 until it exceeds the maximum
+  rgb[rgbIndex] = rgb[rgbIndex] + 20;
 
-  if(rgb[rgb_index] > _maxBrightnessLedRgb){ rgb[rgb_index] = 0; }
+  if(rgb[rgbIndex] > _maxBrightnessLedRgb){ rgb[rgbIndex] = 0; }
   
   for(int i=0; i<_pinCountLedRgb; i++){
     setLedRgbColor(&_pinLedRgb[i], &rgb[i]);
   }
 
-  count_rgb_change++;
+  rgbChangeCount++;
 }
 
 void playRandomSound(){

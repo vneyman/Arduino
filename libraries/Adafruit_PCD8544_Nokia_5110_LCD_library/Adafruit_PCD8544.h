@@ -26,13 +26,17 @@ All text above, and the splash screen must be included in any redistribution
 #endif
 
 #include <SPI.h>
+#include <Adafruit_GFX.h>
 
-#ifdef __SAM3X8E__
+#if  defined(__SAM3X8E__) || defined(ARDUINO_ARCH_SAMD)
   typedef volatile RwReg PortReg;
   typedef uint32_t PortMask;
-#else
+#elif defined(__AVR__)
   typedef volatile uint8_t PortReg;
   typedef uint8_t PortMask;
+#else
+  typedef volatile uint32_t PortReg;
+  typedef uint32_t PortMask;
 #endif
 
 
@@ -82,17 +86,25 @@ class Adafruit_PCD8544 : public Adafruit_GFX {
   void data(uint8_t c);
   
   void setContrast(uint8_t val);
+  void setBias(uint8_t val);
+  uint8_t getContrast(void);
+  uint8_t getBias(void);
   void clearDisplay(void);
   void display();
+  void setReinitInterval(uint8_t val);
+  uint8_t getReinitInterval(void);
   
   void drawPixel(int16_t x, int16_t y, uint16_t color);
   uint8_t getPixel(int8_t x, int8_t y);
 
  private:
   int8_t _din, _sclk, _dc, _rst, _cs;
+  uint8_t _contrast, _bias;
+  uint8_t _reinit_interval, _display_count;
   volatile PortReg  *mosiport, *clkport;
   PortMask mosipinmask, clkpinmask;
 
+  void initDisplay();
   void spiWrite(uint8_t c);
   bool isHardwareSPI();
 };

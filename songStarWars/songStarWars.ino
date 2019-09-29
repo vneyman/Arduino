@@ -20,11 +20,12 @@ const int gH = 784;
 const int gSH = 830;
 const int aH = 880;
 
-const int buzzerPin = 2; // Digital Pin 8
+const int buzzerPin = 9; // Digital Pin 8
 const int ledPin1 = 12;  // Digital Pin 12
 const int ledPin2 = 13;  // Digital Pin 13 Built In Led can Change it if you want
 
 int counter = 0;
+int playCount = 0;
 
 void setup()
 {
@@ -36,6 +37,7 @@ void setup()
 
 void loop()
 {
+  while(playCount < 2){
 
   //Play first section
   firstSection();
@@ -69,6 +71,9 @@ void loop()
   beep(a, 650);  
 
   delay(650);
+
+  playCount++;    
+  }
 }
 
 void beep(int note, int duration)

@@ -37,7 +37,7 @@ void MD_PZone::effectSlice(bool bIn)
     case GET_FIRST_CHAR:
       PRINT_STATE("I SLICE");
 
-      if ((_charCols = getFirstChar()) == 0)
+      if (!getFirstChar(_charCols))
       {
         _fsmState = END;
         break;
@@ -55,12 +55,15 @@ void MD_PZone::effectSlice(bool bIn)
 
     case GET_NEXT_CHAR: // Load the next character from the font table
       PRINT_STATE("I SLICE");
-      // have we reached the end of the characters string?
-      if ((_charCols = getNextChar()) == 0)
+      // Have we reached the end of the characters string?
+      do
       {
-        _fsmState = PAUSE;
-        break;
-      }
+        if (!getNextChar(_charCols))
+          _fsmState = PAUSE;
+      } while (_charCols == 0 && _fsmState != PAUSE);
+
+      if (_fsmState == PAUSE) break;
+
       _countCols = 0;
       _fsmState = PUT_CHAR;
       // !! fall through to next state to start displaying
@@ -124,24 +127,24 @@ void MD_PZone::effectSlice(bool bIn)
       while(_MX->getColumn(_nextPos) == EMPTY_BAR && _endPos >= _limitRight)
         _nextPos = _endPos--; // pretend we just animated it!
 
-      if (_endPos+1 < _limitRight)
+      if (_endPos + 1 < _limitRight)
         _fsmState = END;  //reached the end
       else
       {
         // Move the column over to the left and blank out previous position
         if (_nextPos < ZONE_END_COL(_zoneEnd))
-          _MX->setColumn(_nextPos+1, _MX->getColumn(_nextPos));
+          _MX->setColumn(_nextPos + 1, _MX->getColumn(_nextPos));
         _MX->setColumn(_nextPos, EMPTY_BAR);
         _nextPos++;
 
         // set up for the next time
-        if (_nextPos == ZONE_END_COL(_zoneEnd)+1)
+        if (_nextPos == ZONE_END_COL(_zoneEnd) + 1)
           _nextPos = _endPos--;
       }
       break;
 
     default:
       _fsmState = END;
-    } 
+    }
   }
 }

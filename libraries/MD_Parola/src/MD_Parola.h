@@ -49,6 +49,14 @@ Parola A-to-Z Blog Articles
 If you like and use this library please consider making a small donation using [PayPal](https://paypal.me/MajicDesigns/4USD)
 
 \page pageRevHistory Revision History
+Jun 2019 - version 3.1.1
+- Use const char* parameter instead of char* parameter.
+- Some compiler warnings fixed.
+- Uninitialized variables fixed.
+
+Dec 2018 - version 3.1.0
+- Fixed issues caused by inter char spacing fix in v3.0.2.
+
 Dec 2018 - version 3.0.2
 - Fixed another compile error with ESP8266.
 - Added Double_Scoreboard example.
@@ -85,7 +93,7 @@ Dec 2017 - version 2.6.6
 - Created MAX_ZONES constant to allow static zones array. Interim measure until resolution
   of the errors (?) caused when dynamically allocating the _Z array.
 - Cleaned up most compiler warnings.
-- Reworked Parola_Test example 
+- Reworked Parola_Test example
 
 Nov 2017 - version 2.6.5
 - Fixed RANDOM effect locking issue
@@ -282,22 +290,22 @@ ___
 
 Sprite Text Effect
 ------------------
-The PA_SPRITE text effect requires additional information, as it extends the functionality 
-of the library to include fully customizable, user defined, animated bitmaps to wipe text 
+The PA_SPRITE text effect requires additional information, as it extends the functionality
+of the library to include fully customizable, user defined, animated bitmaps to wipe text
 on and off the LED matrix display.
 
-Each frame is defined by a sequence of numbers that encode the columns of the bitmap. The 
-least significant bit is at the top of the bitmap. If the sprite has a front and rear, the 
-bitmap should be defined for the sprite moving to the right. The library will mirror reverse 
-the image when it moves left. The sprites are essentially defined in the same way as the 
+Each frame is defined by a sequence of numbers that encode the columns of the bitmap. The
+least significant bit is at the top of the bitmap. If the sprite has a front and rear, the
+bitmap should be defined for the sprite moving to the right. The library will mirror reverse
+the image when it moves left. The sprites are essentially defined in the same way as the
 character font and the same tools can be used to define the data for the sprite bitmap.
 
-A sprite has at least one frame. If more than one frame is required, a similar definition is 
-created for each frame of the animation, and a data table constructed defining the animated 
-sprite. To ensure smooth animations, remember that once the last frame is reached, it will loop 
+A sprite has at least one frame. If more than one frame is required, a similar definition is
+created for each frame of the animation, and a data table constructed defining the animated
+sprite. To ensure smooth animations, remember that once the last frame is reached, it will loop
 back to the first, so avoid discontinuities between the two ends of the data table.
 
-The library is given the sprite definition setSpriteData() method and the text effect is 
+The library is given the sprite definition setSpriteData() method and the text effect is
 specified using the effect id PA_SPRITE.
 
 ### More Information
@@ -394,25 +402,44 @@ takes about 1-2ms to update in the MD_MAX72XX display buffers.
 // Granular selection of animations/functions to include in the library
 // If an animation class is not used at all some memory savings can be made
 // by excluding the animation code.
+#ifndef ENA_MISC
 #define ENA_MISC    1   ///< Enable miscellaneous animations
+#endif
+#ifndef ENA_WIPE
 #define ENA_WIPE    1   ///< Enable wipe type animations
+#endif
+#ifndef ENA_SCAN
 #define ENA_SCAN    1   ///< Enable scanning animations
+#endif
+#ifndef ENA_SCR_DIA
 #define ENA_SCR_DIA 1   ///< Enable diagonal scrolling animation
+#endif
+#ifndef ENA_OPNCLS
 #define ENA_OPNCLS  1   ///< Enable open and close scan effects
+#endif
+#ifndef ENA_GROW
 #define ENA_GROW    1   ///< Enable grow effects
+#endif
+#ifndef ENA_SPRITE
 #define ENA_SPRITE  1   ///< Enable sprite effects
+#endif
 
 // If function is not used at all, then some memory savings can be made
 // by excluding associated code.
+#ifndef ENA_GRAPHICS
 #define ENA_GRAPHICS  1 ///< Enable graphics functionality
+#endif
 
 // Miscellaneous defines
-#define ARRAY_SIZE(x) (sizeof(x)/sizeof(x[0]))  ///< Generic macro for obtaining number of elements of an array
+#define ARRAY_SIZE(x) (sizeof(x) / sizeof(x[0]))  ///< Generic macro for obtaining number of elements of an array
+
+#ifndef MAX_ZONES
 #define MAX_ZONES 4     ///< Maximum number of zones allowed. Change to allow more or less zones but uses RAM even if not used.
+#endif
 
 // Zone column calculations
-#define ZONE_START_COL(m) (m*COL_SIZE)    ///< The first column of the first zone module
-#define ZONE_END_COL(m)   (((m+1)*COL_SIZE)-1)///< The last column of the last zone module
+#define ZONE_START_COL(m) (m * COL_SIZE)    ///< The first column of the first zone module
+#define ZONE_END_COL(m)   (((m + 1) * COL_SIZE) - 1)///< The last column of the last zone module
 
 class MD_Parola;
 
@@ -489,7 +516,7 @@ enum textEffect_t
  *
  * The FLIP_UD and FLIP_LR effects are specifically designed to allow rectangular shaped display
  * modules (like Parola or Generic types) to be placed in an inverted position to allow all matrices
- * to be tightly packed into a 2 line display. One of the lines must be flipped horizontally and 
+ * to be tightly packed into a 2 line display. One of the lines must be flipped horizontally and
  * vertically to remain legible in this configuration.
  */
 enum zoneEffect_t
@@ -518,7 +545,7 @@ public:
    * Initialize the object data. This will be called to initialize
    * new data for the class that cannot be done during the object creation.
    *
-   * \param p	pointer to the parent object for this zone.
+   * \param p pointer to the parent object for this zone.
    */
   void begin(MD_MAX72XX *p);
 
@@ -779,7 +806,7 @@ public:
   * \param outFrames the number of frames for the sprite.
   * \return No return value.
   */
-  void setSpriteData(const uint8_t *inData,  uint8_t inWidth,  uint8_t inFrames, 
+  void setSpriteData(const uint8_t *inData,  uint8_t inWidth,  uint8_t inFrames,
                      const uint8_t *outData, uint8_t outWidth, uint8_t outFrames);
 #endif
 
@@ -817,7 +844,7 @@ public:
    * \param pb  pointer to the text buffer to be used.
    * \return No return value.
    */
-  inline void setTextBuffer(char *pb) { _pText = pb; }
+  inline void setTextBuffer(const char *pb) { _pText = pb; }
 
   /**
    * Set the entry and exit text effects for the zone.
@@ -951,14 +978,14 @@ private:
   /***
     *  Structure for list of user defined characters substitutions.
   */
-  typedef struct charDef_t
+  struct charDef_t
   {
     uint8_t   code;   ///< the ASCII code for the user defined character
     uint8_t   *data;  ///< user supplied data
     charDef_t *next;  ///< next in the list
   };
 
-  MD_MAX72XX	*_MX;   ///< Pointer to the parent passed in at begin()
+  MD_MAX72XX *_MX;   ///< Pointer to the parent passed in at begin()
 
   // Time and speed controlling data and methods
   bool      _suspend;     // don't do anything
@@ -982,9 +1009,9 @@ private:
   uint8_t         _intensity;   // display intensity
   bool            _animationAdvanced;  // true is animation advanced inthe last animation call
 
-  void      setInitialConditions(void); // set up initial conditions for an effect
-  uint16_t  getTextWidth(char *p);      // width of text in columns
-  bool      calcTextLimits(char *p);    // calculate the right and left limits for the text
+  void      setInitialConditions(void);    // set up initial conditions for an effect
+  uint16_t  getTextWidth(const char *p);   // width of text in columns
+  bool      calcTextLimits(const char *p); // calculate the right and left limits for the text
 
   // Variables used in the effects routines. These can be used by the functions as needed.
   uint8_t   _zoneStart;   // First zone module number
@@ -994,16 +1021,16 @@ private:
   int16_t   _startPos;    // Start position for the text LED
   int16_t   _endPos;      // End limit for the text LED.
 
-  void		setInitialEffectConditions(void);	// set the initial conditions for loops in the FSM
+  void setInitialEffectConditions(void); // set the initial conditions for loops in the FSM
 
   // Character buffer handling data and methods
-  char    *_pText;                // pointer to text buffer from user call
-  char    *_pCurChar;             // the current character being processed in the text
-  bool    _endOfText;             // true when the end of the text string has been reached.
-  void    moveTextPointer(void);  // move the text pointer depending on direction of buffer scan
+  const char *_pText;                // pointer to text buffer from user call
+  const char *_pCurChar;             // the current character being processed in the text
+  bool       _endOfText;             // true when the end of the text string has been reached.
+  void       moveTextPointer(void);  // move the text pointer depending on direction of buffer scan
 
-  uint8_t getFirstChar(void);     // put the first Text char into the char buffer
-  uint8_t getNextChar(void);      // put the next Text char into the char buffer
+  bool getFirstChar(uint8_t &len);// put the first Text char into the char buffer
+  bool getNextChar(uint8_t &len); // put the next Text char into the char buffer
 
   // Font character handling data and methods
   charDef_t *_userChars;  // the root of the list of user defined characters
@@ -1015,7 +1042,7 @@ private:
   MD_MAX72XX::fontType_t  *_fontDef;  // font for this zone
 
   void      allocateFontBuffer(void); // allocate _cBuf based on the size of the largest font characters
-  uint8_t   findChar(uint8_t code, uint8_t size, uint8_t *cBuf);	// look for user defined character
+  uint8_t   findChar(uint8_t code, uint8_t size, uint8_t *cBuf); // look for user defined character
   uint8_t   makeChar(char c, bool addBlank);      // load a character bitmap and add in trailing _charSpacing blanks if req'd
   void      reverseBuf(uint8_t *p, uint8_t size); // reverse the elements of the buffer
   void      invertBuf(uint8_t *p, uint8_t size);  // invert the elements of the buffer
@@ -1065,7 +1092,6 @@ private:
   void  effectGrow(bool bUp, bool bIn);
 //#endif // ENA_GROW
 };
-
 
 /**
  * Core object for the Parola library.
@@ -1292,7 +1318,7 @@ public:
    * \param speed   parameter suitable for the setSpeed() method.
    * \return No return value.
    */
-  inline void displayScroll(char *pText, textPosition_t align, textEffect_t effect, uint16_t speed)
+  inline void displayScroll(const char *pText, textPosition_t align, textEffect_t effect, uint16_t speed)
     { displayZoneText(0, pText, align, speed, 0, effect, effect); }
 
  /**
@@ -1310,7 +1336,7 @@ public:
    * \param effectOut parameter suitable for the setTextEffect() method.
    * \return No return value.
    */
-  inline void displayText(char *pText, textPosition_t align, uint16_t speed, uint16_t pause, textEffect_t effectIn, textEffect_t effectOut = PA_NO_EFFECT)
+  inline void displayText(const char *pText, textPosition_t align, uint16_t speed, uint16_t pause, textEffect_t effectIn, textEffect_t effectOut = PA_NO_EFFECT)
     { displayZoneText(0, pText, align, speed, pause, effectIn, effectOut); }
 
  /**
@@ -1329,7 +1355,7 @@ public:
    * \param effectOut parameter suitable for the setTextEffect() method.
    * \return No return value.
    */
-  void displayZoneText(uint8_t z, char *pText, textPosition_t align, uint16_t speed, uint16_t pause, textEffect_t effectIn, textEffect_t effectOut = PA_NO_EFFECT);
+  void displayZoneText(uint8_t z, const char *pText, textPosition_t align, uint16_t speed, uint16_t pause, textEffect_t effectIn, textEffect_t effectOut = PA_NO_EFFECT);
 
   /** @} */
   //--------------------------------------------------------------
@@ -1455,7 +1481,7 @@ public:
    * \param cs  space between characters in columns.
    * \return No return value.
    */
-  void setCharSpacing(uint8_t cs) { for (uint8_t i=0; i<_numZones; i++) _Z[i].setCharSpacing(cs); }
+  void setCharSpacing(uint8_t cs) { for (uint8_t i = 0; i < _numZones; i++) _Z[i].setCharSpacing(cs); }
 
   /**
    * Set the inter-character spacing in columns for the specified zone.
@@ -1476,7 +1502,7 @@ public:
    * \param intensity the intensity to set the display (0-15).
    * \return No return value.
    */
-  inline void setIntensity(uint8_t intensity) { for (uint8_t i=0; i<_numZones; i++) _Z[i].setIntensity(intensity); }
+  inline void setIntensity(uint8_t intensity) { for (uint8_t i = 0; i < _numZones; i++) _Z[i].setIntensity(intensity); }
 
   /**
    * Set the display brightness for the specified zone.
@@ -1497,7 +1523,7 @@ public:
    * \param invert  true for inverted display, false for normal display
    * \return No return value.
    */
-  inline void setInvert(uint8_t invert) { for (uint8_t i=0; i<_numZones; i++) _Z[i].setInvert(invert); }
+  inline void setInvert(uint8_t invert) { for (uint8_t i = 0; i < _numZones; i++) _Z[i].setInvert(invert); }
 
   /**
    * Invert the display in the specified zone.
@@ -1520,7 +1546,7 @@ public:
    * \param pause the time, in milliseconds, between animations.
    * \return No return value.
    */
-  inline void setPause(uint16_t pause) { for (uint8_t i=0; i<_numZones; i++) _Z[i].setPause(pause); }
+  inline void setPause(uint16_t pause) { for (uint8_t i = 0; i < _numZones; i++) _Z[i].setPause(pause); }
 
   /**
    * Set the pause between ENTER and EXIT animations for the specified zone.
@@ -1544,7 +1570,7 @@ public:
    * \param space the spacing, in columns, between messages; zero for default behaviour..
    * \return No return value.
    */
-  inline void setScrollSpacing(uint16_t space) { for (uint8_t i=0; i<_numZones; i++) _Z[i].setScrollSpacing(space); }
+  inline void setScrollSpacing(uint16_t space) { for (uint8_t i = 0; i < _numZones; i++) _Z[i].setScrollSpacing(space); }
 
   /**
    * Set the animation frame speed for all zones.
@@ -1555,7 +1581,7 @@ public:
    * \param speed the time, in milliseconds, between animation frames.
    * \return No return value.
    */
-  inline void setSpeed(uint16_t speed) { for (uint8_t i=0; i<_numZones; i++) _Z[i].setSpeed(speed); }
+  inline void setSpeed(uint16_t speed) { for (uint8_t i = 0; i < _numZones; i++) _Z[i].setSpeed(speed); }
 
   /**
    * Set the animation frame speed for the specified zone.
@@ -1612,7 +1638,7 @@ public:
   */
   void setSpriteData(const uint8_t *inData, uint8_t inWidth, uint8_t inFrames,
                      const uint8_t *outData, uint8_t outWidth, uint8_t outFrames)
-  { for (uint8_t i = 0; i<_numZones; i++) _Z[i].setSpriteData(inData, inWidth, inFrames, outData, outWidth, outFrames); }
+  { for (uint8_t i = 0; i < _numZones; i++) _Z[i].setSpriteData(inData, inWidth, inFrames, outData, outWidth, outFrames); }
 
 #endif
 
@@ -1624,7 +1650,7 @@ public:
    * \param ta  the required text alignment.
    * \return No return value.
    */
-  inline void setTextAlignment(textPosition_t ta) { for (uint8_t i=0; i<_numZones; i++) _Z[i].setTextAlignment(ta); }
+  inline void setTextAlignment(textPosition_t ta) { for (uint8_t i = 0; i < _numZones; i++) _Z[i].setTextAlignment(ta); }
 
   /**
    * Set the text alignment for the specified zone.
@@ -1653,7 +1679,7 @@ public:
    * \param pb  pointer to the text buffer to be used.
    * \return No return value.
    */
-  inline void setTextBuffer(char *pb) { /*for (uint8_t i = 0; i<_numZones; i++) */_Z[0].setTextBuffer(pb); }
+  inline void setTextBuffer(const char *pb) { /*for (uint8_t i = 0; i<_numZones; i++) */_Z[0].setTextBuffer(pb); }
 
   /**
    * Set the pointer to the text buffer for the specified zone.
@@ -1664,7 +1690,7 @@ public:
    * \param pb  pointer to the text buffer to be used.
    * \return No return value.
    */
-  inline void setTextBuffer(uint8_t z, char *pb) { if (z < _numZones) _Z[z].setTextBuffer(pb); }
+  inline void setTextBuffer(uint8_t z, const char *pb) { if (z < _numZones) _Z[z].setTextBuffer(pb); }
 
   /**
    * Set the entry and exit text effects for all zones.
@@ -1742,7 +1768,7 @@ public:
    * \param data  pointer to the character data.
    * \return No return value.
    */
-  inline void addChar(uint8_t code, uint8_t *data) { for (uint8_t i=0; i<_numZones; i++) _Z[i].addChar(code, data); }
+  inline void addChar(uint8_t code, uint8_t *data) { for (uint8_t i = 0; i < _numZones; i++) _Z[i].addChar(code, data); }
 
   /**
    * Add a user defined character to the replacement specified zone.
@@ -1764,7 +1790,7 @@ public:
    * \param code  ASCII code for the character data.
    * \return No return value.
    */
-  inline void delChar(uint8_t code) { for (uint8_t i=0; i<_numZones; i++) _Z[i].delChar(code); }
+  inline void delChar(uint8_t code) { for (uint8_t i = 0; i < _numZones; i++) _Z[i].delChar(code); }
 
   /**
    * Delete a user defined character to the replacement list for the specified zone.
@@ -1803,10 +1829,10 @@ public:
    * MD_MAX72xx font builder (refer to documentation for the tool and the MD_MAX72xx library).
    * Passing nullptr resets to the library default font.
    *
-   * \param fontDef	Pointer to the font definition to be used.
+   * \param fontDef Pointer to the font definition to be used.
    * \return No return value.
    */
-  inline void setFont(MD_MAX72XX::fontType_t *fontDef) { for (uint8_t i=0; i<_numZones; i++) _Z[i].setZoneFont(fontDef); }
+  inline void setFont(MD_MAX72XX::fontType_t *fontDef) { for (uint8_t i = 0; i < _numZones; i++) _Z[i].setZoneFont(fontDef); }
 
   /**
    * Set the display font for a specific zone.
@@ -1892,7 +1918,6 @@ public:
   /** @} */
 #endif
 
-
   //--------------------------------------------------------------
   /** \name Support methods for Print class extension.
   * @{
@@ -1919,7 +1944,7 @@ public:
   * Invokes an animation using PA_PRINT with all other settings (alignment,
   * speed, etc) taken from current defaults.
   * This method also invokes the animation for the print and returns when that has
-  * finished, so it blocks while the printing is happening, which should be at least 
+  * finished, so it blocks while the printing is happening, which should be at least
   * one iteration of the wait loop.
   *
   * \param str  Pointer to the nul terminated char array.
@@ -1950,6 +1975,5 @@ public:
   uint8_t     _numModules;///< Number of display modules [0..numModules-1]
   uint8_t     _numZones;  ///< Max number of zones in the display [0..numZones-1]
 };
-
 
 #endif

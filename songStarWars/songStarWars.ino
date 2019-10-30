@@ -37,7 +37,7 @@ void setup()
 
 void loop()
 {
-  while(playCount < 2){
+  while(playCount < 10){
 
   //Play first section
   firstSection();

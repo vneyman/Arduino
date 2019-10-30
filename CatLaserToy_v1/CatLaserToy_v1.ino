@@ -1,4 +1,4 @@
-#include <VarSpeedServo.h> 
+#include <VarSpeedServo.h> //https://github.com/netlabtoolkit/VarSpeedServo
 
 // include the library code:
 
@@ -22,7 +22,7 @@ VarSpeedServo _myServo1;
 const int _pinServo1 = 5;
 unsigned int _servoAngleMin = 50, _servoAngleMax = 150;
 unsigned int _servoSpeed = 100;
-const unsigned int _servoSpeedMin = 2, _servoSpeedMax = 255;
+const unsigned int _servoSpeedMin = 30, _servoSpeedMax = 255;
 unsigned int _servoPosition = (_servoAngleMax + _servoAngleMin) / 2;
 unsigned int _servoDelay = 300;
 bool _servoState = 1; //depends on the potentiometer value. If less than _potMin then off.
@@ -34,7 +34,7 @@ volatile byte _pirState = LOW;
 
 //Laser settings
 const byte _pinLaser = 7;
-byte _laserState = 0, _laserAutoPlayState = 0;
+byte _laserState = 0, _laserAutoPlayState = 0, _laserAutoPlayStatePrevious = 0;
 const unsigned int _laserAutoPlayTime = 15000;
 unsigned long _laserAutoPlayTimeStart;
 
@@ -45,15 +45,15 @@ unsigned int _ldrValue;
 
 //Potentiometer settings
 const int _pinPot = A3;
-const unsigned int _potMin = 120, _potMax = 900;
+const unsigned int _potMin = 95, _potMax = 900;
 unsigned int _potValue;
 
 //RGB LEDs
-int _pinLedRgb[] = {11, 10, 9};      // the number of the LED pin
+int _pinLedRgb[] = {11, 6, 3};      // the number of the LED pin
 unsigned int _ledRgbPinCount = ARRAY_SIZE(_pinLedRgb);
-const int _ledRgbBrightnessMax = 220; //max brightness of each RGB color
+const int _ledRgbBrightnessMin = 20, _ledRgbBrightnessMax = 220; //max brightness of each RGB color
 unsigned int _ledRgbBrightness = _ledRgbBrightnessMax;
-const unsigned int _ledRgbIndexCountChange = 10;
+//const unsigned int _ledRgbIndexCountChange = 10;
 
 //Runtime variables
 unsigned long _runTimeLastUpdate;
@@ -83,11 +83,13 @@ void setup() {
   _myServo1.write(_servoPosition, _servoSpeed, true); //Set servo position to initial position
   
   #if DEBUG_ENABLE
+    //analogWrite(3, 200); delay(2000);
+    
     int rgb[] = {_ledRgbBrightness, 0, 0}; //red
     
     setLedRgbColors(rgb); delay(500);
     rgb[0] = 0; rgb[1] = _ledRgbBrightness; //green
-    setLedRgbColors(rgb); delay(500);
+    setLedRgbColors(rgb); delay(1500);
     rgb[1] = 0; rgb[2] = _ledRgbBrightness; //blue
     setLedRgbColors(rgb); delay(500);
   #endif
@@ -101,7 +103,7 @@ void setup() {
 void loop() {
   if ((millis() - _runTimeLastUpdate) > _runTimeUpdateDelay || _runTimeLastUpdate > millis()) {
     readLdr(); setLedRgbRandom();
-    readPot(); //setServoPositionRandom();
+    readPot(); 
     
     _runTimeLastUpdate = millis();
   }
@@ -116,7 +118,7 @@ void readPirSensor(){
 void setServoPosition(int servoPosition){
   #if DEBUG_ENABLE
     DEBUGS("\nSet Servo Position");
-    DEBUG("\tON or OFF: ", _servoState);
+    //DEBUG("\tON or OFF: ", _servoState);
   #endif
 
   if(_servoState){
@@ -127,7 +129,7 @@ void setServoPosition(int servoPosition){
 
 void autoPlay(){
   #if DEBUG_ENABLE
-    DEBUGS("\nAuto Play");
+    //DEBUGS("\nAuto Play");
   #endif
 
   if(_pirState){
@@ -144,11 +146,17 @@ void autoPlay(){
         delay(random(_servoDelay, _servoDelay*5));
     }else{
         _laserAutoPlayState = 0;
-        autoPlayReset();
+        if(_laserAutoPlayStatePrevious) { autoPlayReset(); }
       }
+
+    _laserAutoPlayStatePrevious = _laserAutoPlayState;
   }
 
 void autoPlayReset(){
+  #if DEBUG_ENABLE
+    DEBUGS("\n***Auto Play Reset***");
+  #endif
+  
   _laserState = LOW;
   digitalWrite(_pinLaser, _laserState);
   _servoPosition = (_servoAngleMax + _servoAngleMin) / 2;
@@ -162,10 +170,6 @@ void readLdr(){
 
   _ldrValue = analogRead(_pinLdr);
   
-  #if DEBUG_ENABLE
-    DEBUG("\nLDR: ", _ldrValue);
-    //delay(1000);
-  #endif
   setLedRgbBrightnessMax();
   }
 
@@ -191,12 +195,17 @@ void setServoSpeed(){
 
   _servoState = 1;
   _potValue = constrain(_potValue, _potMin, _potMax);
-  _servoSpeed = map(_potValue, _potMin, _potMax, 50, 255);
+  _servoSpeed = map(_potValue, _potMin, _potMax, _servoSpeedMin, _servoSpeedMax);
+
+    #if DEBUG_ENABLE
+    DEBUG("\nServo Speed: ", _servoSpeed);
+    //delay(200);
+  #endif
   }
 
 void setLedRgbBrightnessMax(){
   _ldrValue = constrain(_ldrValue, _ldrMin, _ldrMax);
-  _ledRgbBrightness = map(_ldrValue, _ldrMin, _ldrMax, 0, _ledRgbBrightnessMax);
+  _ledRgbBrightness = map(_ldrValue, _ldrMin, _ldrMax, _ledRgbBrightnessMin, _ledRgbBrightnessMax);
   }
 
 
@@ -204,6 +213,7 @@ void setLedRgbRandom()
 {
   #if DEBUG_ENABLE
       DEBUG("\n Random RGB; max brightness: ", _ledRgbBrightness);
+      DEBUG("\n RGB pin count: ", _ledRgbPinCount);
   #endif
 
   static int rgbChangeCount = 1;
@@ -214,7 +224,7 @@ void setLedRgbRandom()
                   random((int)(_ledRgbBrightness / 2), (int)_ledRgbBrightness) };
 
  rgbIndex = random(0, _ledRgbPinCount);
- rgb[rgbIndex] = random(0, _ledRgbBrightness);
+ rgb[rgbIndex] = random((int)(_ledRgbBrightness / 3), _ledRgbBrightness);
 
  setLedRgbColors(rgb);
 }
@@ -222,6 +232,7 @@ void setLedRgbRandom()
 void setLedRgbColors(int colorValues[])
 {   
   for(int i=0; i<_ledRgbPinCount; i++){ 
+    DEBUG("\n RGB: ", _pinLedRgb[i]); DEBUG(" : ", colorValues[i]);
     setLedRgbColor(&_pinLedRgb[i], &colorValues[i]);
   }
 }

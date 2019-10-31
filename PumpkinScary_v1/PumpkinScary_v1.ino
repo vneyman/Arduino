@@ -30,7 +30,8 @@ const int _pinPirInterrupt = 0; //Interrupt pin conversion: pin 2 = 0; pin 3 = 1
 volatile byte _pirState = LOW;
 
 //LEDs
-int _pinled[] = {8, 9, 10};      // the number of the LED pin
+//int _pinled[] = {8, 9, 10};      // the number of the LED pin
+const int _pinled[] = {13};      // the number of the LED pin
 unsigned int _ledPinCount = ARRAY_SIZE(_pinled);
 
 //Runtime variables
@@ -56,7 +57,7 @@ void setup() {
   
     for(int i=0; i< _ledPinCount; i++){
       digitalWrite(_pinled[i], HIGH);
-      delay(250);
+      delay(500);
       digitalWrite(_pinled[i], LOW);
       delay(250);
     }
@@ -74,12 +75,12 @@ void loop() {
     DEBUG("\tON or OFF: ", _pirState);
   #endif
 
-  ledOnOff();
-
   if(_pirState){ playSong(); }
 }
 
 void playSong(){ 
+    ledOnOff(1);
+    
     _isSongPlayStatus = 1;
     
     static _songArray songs = {playSpookyMusic, playSampsonSound, chirp, meow2};
@@ -102,6 +103,8 @@ void playSong(){
     
     _isSongPlayStatus = 0;
     //delay(1000);
+
+    ledOnOff(0);
 }
 
 void playSampsonSound(){
@@ -197,11 +200,15 @@ void meow2() {  // cat meow (emphasis on "ow")
   }
 
 }
- 
 
-void ledOnOff(){  
+void ledOnOff(byte isOn){  
+  #if DEBUG_ENABLE
+    DEBUGS("\nledOnOff");
+    DEBUG("\tON or OFF: ", isOn);
+  #endif
+  
   for(int i=0; i< _ledPinCount; i++){
-      digitalWrite(_pinled[i], _pirState);
+      digitalWrite(_pinled[i], isOn);
     }  
  }
 

@@ -32,15 +32,15 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 MD_MAX72XX::MD_MAX72XX(moduleType_t mod, uint8_t dataPin, uint8_t clkPin, uint8_t csPin, uint8_t numDevices):
-_dataPin(dataPin), _clkPin(clkPin), _csPin(csPin), _maxDevices(numDevices),
-_hardwareSPI(false), _updateEnabled(true)
+_dataPin(dataPin), _clkPin(clkPin), _csPin(csPin),
+_hardwareSPI(false), _maxDevices(numDevices), _updateEnabled(true)
 {
   setModuleParameters(mod);
 }
 
 MD_MAX72XX::MD_MAX72XX(moduleType_t mod, uint8_t csPin, uint8_t numDevices):
-_dataPin(0), _clkPin(0), _csPin(csPin), _maxDevices(numDevices),
-_hardwareSPI(true), _updateEnabled(true)
+_dataPin(0), _clkPin(0), _csPin(csPin),
+_hardwareSPI(true), _maxDevices(numDevices), _updateEnabled(true)
 {
   setModuleParameters(mod);
 }
@@ -62,15 +62,11 @@ void MD_MAX72XX::setModuleParameters(moduleType_t mod)
 
 void MD_MAX72XX::begin(void)
 {
-  // initialize the AVR hardware
+  // initialize the SPI interface
   if (_hardwareSPI)
   {
     PRINTS("\nHardware SPI");
     SPI.begin();
-    // Old mode of operations!
-    //SPI.setDataMode(SPI_MODE0);
-    //SPI.setBitOrder(MSBFIRST);
-    //SPI.setClockDivider(SPI_CLOCK_DIV2);
   }
   else
   {
@@ -80,8 +76,8 @@ void MD_MAX72XX::begin(void)
   }
 
   // initialize our preferred CS pin (could be same as SS)
-  digitalWrite(_csPin, HIGH);
   pinMode(_csPin, OUTPUT);
+  digitalWrite(_csPin, HIGH);
 
   // object memory and internals
   setShiftDataInCallback(nullptr);
@@ -175,6 +171,9 @@ void MD_MAX72XX::controlLibrary(controlRequest_t mode, int value)
 
     case WRAPAROUND:
       _wrapAround = (value == ON);
+      break;
+
+    default:
       break;
   }
 }
@@ -290,12 +289,12 @@ void MD_MAX72XX::spiSend()
   // shift out the data
   if (_hardwareSPI)
   {
-    for (uint8_t i = 0; i < SPI_DATA_SIZE; i++)
+    for (uint16_t i = 0; i < SPI_DATA_SIZE; i++)
       SPI.transfer(_spiData[i]);
   }
   else  // not hardware SPI - bit bash it out
   {
-    for (uint8_t i = 0; i < SPI_DATA_SIZE; i++)
+    for (uint16_t i = 0; i < SPI_DATA_SIZE; i++)
       shiftOut(_dataPin, _clkPin, MSBFIRST, _spiData[i]);
   }
 

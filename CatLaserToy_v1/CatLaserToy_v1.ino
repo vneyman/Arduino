@@ -3,7 +3,7 @@
 // include the library code:
 
 // Turn on debug statements to the serial output
-#define  DEBUG_ENABLE  1
+#define  DEBUG_ENABLE  0
 
 #if  DEBUG_ENABLE
 #define DEBUG(s, x) { Serial.print(F(s)); Serial.print(x); }

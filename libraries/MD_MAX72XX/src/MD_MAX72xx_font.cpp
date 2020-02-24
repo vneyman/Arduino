@@ -29,7 +29,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  * \file
  * \brief Implements font definition and methods
  */
-#define USE_NEW_FONT
+#ifndef USE_NEW_FONT
+#define USE_NEW_FONT 1
+#endif
 
 #if USE_LOCAL_FONT
 // Local font handling functions if the option is enabled
@@ -64,6 +66,14 @@ void MD_MAX72XX::loadFontInfo(void)
       c = pgm_read_byte(_fontData + offset++);  // read the version number
       switch (c)
       {
+        case 2:
+          _fontInfo.firstASCII = (pgm_read_byte(_fontData + offset++) << 8);
+          _fontInfo.firstASCII += pgm_read_byte(_fontData + offset++);
+          _fontInfo.lastASCII = (pgm_read_byte(_fontData + offset++) << 8);
+          _fontInfo.lastASCII += pgm_read_byte(_fontData + offset++);
+          _fontInfo.height = pgm_read_byte(_fontData + offset++);
+          break;
+
         case 1:
           _fontInfo.firstASCII = pgm_read_byte(_fontData + offset++);
           _fontInfo.lastASCII  = pgm_read_byte(_fontData + offset++);
@@ -77,6 +87,10 @@ void MD_MAX72XX::loadFontInfo(void)
       }
       _fontInfo.dataOffset = offset;
     }
+    PRINT(" F: ", _fontInfo.firstASCII);
+    PRINT(" L: ", _fontInfo.lastASCII);
+    PRINT(" H: ", _fontInfo.height);
+
     // these always set
     _fontInfo.widthMax = getFontWidth();
   }
@@ -86,7 +100,7 @@ uint8_t MD_MAX72XX::getFontWidth(void)
 {
   uint8_t   max = 0;
   uint8_t   charWidth;
-  uint16_t  offset = _fontInfo.dataOffset;
+  uint32_t  offset = _fontInfo.dataOffset;
 
   PRINTS("\nFinding max font width");
   if (_fontData != nullptr)
@@ -113,9 +127,9 @@ uint8_t MD_MAX72XX::getFontWidth(void)
   return(max);
 }
 
-int16_t MD_MAX72XX::getFontCharOffset(uint8_t c)
+int32_t MD_MAX72XX::getFontCharOffset(uint16_t c)
 {
-  int16_t  offset = _fontInfo.dataOffset;
+  int32_t  offset = _fontInfo.dataOffset;
 
   PRINT("\nfontOffset ASCII ", c);
 
@@ -123,7 +137,7 @@ int16_t MD_MAX72XX::getFontCharOffset(uint8_t c)
     offset = -1;
   else
   {
-    for (uint8_t i=_fontInfo.firstASCII; i<c; i++)
+    for (uint16_t i=_fontInfo.firstASCII; i<c; i++)
     {
       PRINTS(".");
       offset += pgm_read_byte(_fontData+offset);
@@ -131,8 +145,8 @@ int16_t MD_MAX72XX::getFontCharOffset(uint8_t c)
     }
 
     PRINT(" searched offset ", offset);
-    return(offset);
   }
+  return(offset);
 }
 
 bool MD_MAX72XX::setFont(fontType_t *f)
@@ -146,7 +160,7 @@ bool MD_MAX72XX::setFont(fontType_t *f)
   return(true);
 }
 
-uint8_t MD_MAX72XX::getChar(uint8_t c, uint8_t size, uint8_t *buf)
+uint8_t MD_MAX72XX::getChar(uint16_t c, uint8_t size, uint8_t *buf)
 {
   PRINT("\ngetChar: '", (char)c);
   PRINT("' ASC ", c);
@@ -155,7 +169,7 @@ uint8_t MD_MAX72XX::getChar(uint8_t c, uint8_t size, uint8_t *buf)
   if (buf == nullptr)
     return(0);
 
-  int16_t offset = getFontCharOffset(c);
+  int32_t offset = getFontCharOffset(c);
   if (offset == -1)
   {
     memset(buf, 0, size);
@@ -174,14 +188,14 @@ uint8_t MD_MAX72XX::getChar(uint8_t c, uint8_t size, uint8_t *buf)
   return(size);
 }
 
-uint8_t MD_MAX72XX::setChar(uint16_t col, uint8_t c)
+uint8_t MD_MAX72XX::setChar(uint16_t col, uint16_t c)
 {
   PRINT("\nsetChar: '", c);
   PRINT("' column ", col);
   boolean b = _updateEnabled;
   uint8_t size;
 
-  int16_t offset = getFontCharOffset(c);
+  int32_t offset = getFontCharOffset(c);
   if (offset == -1)
     return(0);
 
@@ -204,8 +218,8 @@ uint8_t MD_MAX72XX::setChar(uint16_t col, uint8_t c)
 // Standard font - variable spacing
 MD_MAX72XX::fontType_t PROGMEM _sysfont[] =
 {
-#ifdef USE_NEW_FONT
-  'F', 1, 0, 255, 8,
+#if USE_NEW_FONT
+  'F', 2, 0, 0, 0, 255, 8,
   0,		// 0 - 'Empty Cell'
   5, 62, 91, 79, 91, 62,		// 1 - 'Sad Smiley'
   5, 62, 107, 79, 107, 62,		// 2 - 'Happy Smiley'

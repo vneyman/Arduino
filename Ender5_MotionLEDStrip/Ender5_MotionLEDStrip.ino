@@ -18,18 +18,15 @@
 //PIR Sensor
 const int _pinPir = 3;
 const int _pinPirInterrupt = 1; //Interrupt pin conversion: pin 2 = 0; pin 3 = 1
-volatile byte _pirState = HIGH;
+volatile byte _pirState = LOW;
 
 //Strip LEDs
 const int _pinLedStrip = 6;      // the number of the LED pin
-const unsigned int _ledStripOnTime = 60000; //1 second: 1000 seconds; 60 seconds: 60*1000
+const unsigned int _ledStripOnTime = 30000; //1 second: 1000 seconds; 60 seconds: 60*1000
+byte _ledStripState;
 unsigned long _ledStripLastTimeStart;
-bool _ledStripState, _ledStripStatePrevious;
 
-const int _ledStripBrightnessMin = 20, _ledStripBrightnessMax = 220; //max brightness of each Strip color
-unsigned int _ledStripBrightness = _ledStripBrightnessMax;
-
-// the following variables are long's because the time, measured in miliseconds,
+// the following variables are long's because the time, measured in milliseconds,
 // will quickly become a bigger number than can be stored in an int.
 
 void setup() {
@@ -40,52 +37,41 @@ void setup() {
 
   pinMode(_pinPir, INPUT); //digital
   pinMode(_pinLedStrip, OUTPUT); //digital
-
-  #if DEBUG_ENABLE    
-    setLedStripAnalog(150); delay(500); //on
-    setLedStripAnalog(0); delay(500); //off
-  #endif
-
-  // set initial LED state
-  setLedStrip(0);
-
-  attachInterrupt(_pinPirInterrupt, readPirSensor, CHANGE);
-}
-
-void loop() { 
-  enableDisableLedStrip();
-}
   
+  setLedStripAnalog(150); delay(500); //on
+  setLedStripAnalog(0); delay(500); //off
+
+  //attachInterrupt(_pinPirInterrupt, readPirSensor, CHANGE);
+}
+
+void loop() {   
+  if(digitalRead(_pinPir)){
+    _pirState = HIGH; 
+    turnOnLedStrip();
+    _ledStripState = HIGH;
+    }else{
+      _pirState = LOW;
+      if(_ledStripState == HIGH ) { setLedStrip(0); }
+      _ledStripState = LOW;
+      }
+}
+
+void turnOnLedStrip(){
+  #if DEBUG_ENABLE
+    DEBUGS("\n **turnOnLedStrip**");
+  #endif
+  
+  _ledStripLastTimeStart = millis();
+  if(_ledStripState == LOW) { setLedStrip(1); }
+  
+  while((millis() - _ledStripLastTimeStart) <= _ledStripOnTime && millis() > _ledStripLastTimeStart){
+    1==1; //do nothing
+    }
+}
+
 void readPirSensor(){
   _pirState = digitalRead(_pinPir);
   }
-
-void enableDisableLedStrip(){
-  #if DEBUG_ENABLE
-    DEBUGS("\nAuto Play");
-  #endif
-
-  #if DEBUG_ENABLE
-    DEBUG("\n_pirState: ", _pirState);
-  #endif
-
-  if(_pirState){
-      _ledStripState = 1;
-      _ledStripLastTimeStart = millis();
-      delay(1);
-    }
-
-  if(_ledStripState == 1 && (millis() - _ledStripLastTimeStart) < _ledStripOnTime){
-        if(!_ledStripStatePrevious) { 
-          setLedStrip(1); //turn on when it is NOT already on 
-        }
-    }else{
-        _ledStripState = 0;
-        setLedStrip(0); //turn off
-      }
-
-    _ledStripStatePrevious = _ledStripState;
-}
 
 void setLedStrip(bool isOn)
 {   

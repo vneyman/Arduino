@@ -77,10 +77,10 @@ void setup() {
 void loop(){  
   // MAIN CODE WRAPPER  
   if(digitalRead(_pinPir) == HIGH){
-    _pirState == HIGH;
+    _pirState = HIGH;
     turnOnLeds();
   }else{
-    _pirState == LOW;
+    _pirState = LOW;
     turnOffAllLeds();
   }
 }
@@ -264,5 +264,3 @@ void juggle() {
 void wakeUp(){
     // Just a handler for the pin interrupt.
 }
-
-

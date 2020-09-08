@@ -22,7 +22,8 @@
 
 const int _countLeds = 7; //number of pair of eyeballs
 boolean _registers[_countLeds];
-byte _stateLeds = 0, _stateLedsPrevious = 0; //0 is off; 1 is random pattern; 2 is wave pattern
+byte _stateLeds = 0, _stateLedsPrevious = 0; //0 is off; 1 is wave pattern; 2 is random pattern;
+int delayDefault = 1750;
 
 //LDR settings
 #define _pinLdr A0
@@ -43,17 +44,24 @@ void setup(){
   pinMode(_pinLdr, INPUT);
 
   attachInterrupt(_pinIrInterrupt, getIr, RISING);
+
+  //prepare program
+  oneByOneRandomWrapper(10); offLeds();
 }
 
 void loop() { 
   getLdr();
 
+  #if DEBUG_ENABLE
+    DEBUG("\n _stateLeds:\t", _stateLeds);
+  #endif
+
   switch(_stateLeds){
     case 1: //IR sensor high (motion detected)
-      oneByOneRandomWrapper();
+      wavePatternIrSensor();
       break;
      case 2: //night time
-      wavePattern();
+      oneByOneRandomWrapper(20);
       break;
      default: //day time, IR sensor not detected
       if(_stateLedsPrevious != _stateLeds){ offLeds(); }
@@ -64,35 +72,58 @@ void loop() {
   _stateLeds = 0;
 }
 
-void wavePattern(){
-  for(int i = 0; i < _countLeds; i++){
-    Serial.println(_stateLeds); //will not work without this? DO NOT KNOW WHY.
-    if(_stateLeds == 1) { wavePatternIrSensor(); break; }
-    
-    _registers[i] = HIGH; 
-    delay(500);
-    writeRegister();
+void wavePattern(int ledMaxOn){
+  #if DEBUG_ENABLE
+    DEBUG("\n wavePattern:\t", ledMaxOn);
+  #endif
+  
+  int ledOrder[] = { 0, 3, 4, 1, 5, 2, 6 }; 
+
+    for(int i = 0; i < _countLeds; i++){
+      //Serial.print("\n"); Serial.println(_stateLeds); //will not work without this? DO NOT KNOW WHY.   
+      
+      _registers[ledOrder[i]] = HIGH;
+
+      if(i >= ledMaxOn) {
+        _registers[ledOrder[i - ledMaxOn]] = LOW;
+        }
+
+      writeRegister();      
+      delay(delayDefault);
     }
 
-  for(int i = _countLeds - 1; i >= 0; i--){
-    Serial.println(_stateLeds); //will not work without this? DO NOT KNOW WHY.
-    if(_stateLeds == 1) { wavePatternIrSensor(); break; }
+    for(int i = _countLeds - 1; i >= 0; i--){
+      //Serial.print("\n"); Serial.println(_stateLeds); //will not work without this? DO NOT KNOW WHY.   
+      
+      _registers[ledOrder[i]] = HIGH;
 
-    _registers[i] = LOW;
-    delay(500);
-    writeRegister();
+      if(i <= _countLeds - ledMaxOn) {
+        _registers[ledOrder[i + ledMaxOn]] = LOW;
+        }
+                 
+      writeRegister();
+      delay(delayDefault);
     }
   }
+
 
 void wavePatternIrSensor(){
-      offLeds(); 
-      oneByOneRandomWrapper(); 
+      offLeds();
+      delayDefault = 250;
+      wavePattern(1);
+      delayDefault = 500;
+      wavePattern(2);
+      offLeds();
+      delayDefault = 750;
   }
 
-void oneByOneRandomWrapper(){
-    for(int i = 0; i < 20; i++){
+void oneByOneRandomWrapper(int ledNumberToLight){
+    for(int i = 0; i < ledNumberToLight; i++){
       oneByOneRandom();
-      delay(500);
+      
+      if(_stateLeds == 1) { wavePatternIrSensor(); break; }
+      
+      delay(delayDefault);
     }
 }
 
@@ -108,11 +139,18 @@ void writeRegister(){
   digitalWrite(_pinLatch, HIGH);
  }
 
-void oneByOneRandom(){
+void oneByOneRandom(){  
+  static int bitToSetPrevious;
   int bitToSet = random(_countLeds);
+
+  while(bitToSet == bitToSetPrevious){
+    bitToSet = random(_countLeds);
+    }
 
   // write to the shift register with the correct bit set high:
   registerWrite(bitToSet, HIGH);
+  
+  bitToSetPrevious = bitToSet;
 }
 
 void registerWrite(int whichPin, int whichState) {
@@ -129,7 +167,7 @@ void registerWrite(int whichPin, int whichState) {
   // shift the bits out:
   shiftOut(_pinData, _pinClock, MSBFIRST, bitsToSend);
 
-    // turn on the output so the LEDs can light up:
+  // turn on the output so the LEDs can light up:
   digitalWrite(_pinLatch, HIGH);
 }
 
@@ -145,17 +183,13 @@ void getLdr(){
 }
 
 void getIr(){  
-  #if DEBUG_ENABLE
-    DEBUGS("\n IR sensor HIGH");
-  #endif
-
   _stateLeds = 1;
 }
 
 void offLeds(){
   for(int i = _countLeds - 1; i >= 0; i--){
     _registers[i] = LOW;
-    delay(10);
+    delay(5);
     writeRegister();
    }
 }

@@ -1,5 +1,5 @@
 int led_pin = 13;
-int buzzer_pin = 11;
+int buzzer_pin = 3;
 
 struct MusicStruct {
   int A = 550;
